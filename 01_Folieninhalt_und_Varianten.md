@@ -489,7 +489,7 @@ flowchart LR
 | B1 | Folie 6 Messbereichserweiterung | Frage „Wie hat das Messgerät verschiedene Bereiche?“ |
 | B2 | Folie 7 Spannungs-/stromrichtig | Frage „Wie misst man einen Widerstand genau?“ |
 | B3 | Folie 13 SAR-Beispiel | Frage „Wie funktioniert der ADC im Arduino genau?“ |
-| B4 | TRMS vs. Mittelwert | Frage „Warum zeigen zwei Multimeter bei AC Unterschiedliches?“ (siehe [[03_QA_Vorbereitung]]) |
+| B4 | TRMS vs. Mittelwert | Frage „Warum zeigen zwei Multimeter bei AC Unterschiedliches?“ (siehe [[02_QA_Vorbereitung]]) |
 
 > [!tip] Trick für die 10-Min-Fassung
 > Die gestrichenen Folien nicht löschen, sondern **hinter die Danke-Folie** schieben. Dann hast du sie als Backup für Rückfragen und wirkst extrem gut vorbereitet.

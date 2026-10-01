@@ -9,9 +9,9 @@ Thema: *Analog-Digital-Wandler, Amperemeter und Voltmeter* · Termin: **Fr, 02.1
 |---|---|---|
 | [`01_Folieninhalt_und_Varianten.md`](01_Folieninhalt_und_Varianten.md) | **Hauptdokument**: alle 15 Folien mit Kernaussage, Folieninhalt, 2–3 Darstellungsvarianten, Sprechernotiz, Zeitplan | Obsidian |
 | [`slides/praesentation.tex`](slides/praesentation.tex) | Fertiges, kompilierbares **Beamer-Deck** (16:9) mit Schaltbildern & Diagrammen als Referenz/Vorschau | TeXstudio + MiKTeX |
-| [`03_QA_Vorbereitung.md`](03_QA_Vorbereitung.md) | Wahrscheinliche Rückfragen mit Musterantworten | Obsidian |
-| [`04_Spickzettel.md`](04_Spickzettel.md) / [`spickzettel/spickzettel.tex`](spickzettel/spickzettel.tex) | 1-Seiten-Spickzettel (Formeln, Zahlen, Zeitplan) | Obsidian / TeXstudio |
-| [`05_Quellen.md`](05_Quellen.md) | Quellenverzeichnis inkl. Kurzfassung für eine Quellenfolie | Obsidian |
+| [`02_QA_Vorbereitung.md`](02_QA_Vorbereitung.md) | Wahrscheinliche Rückfragen mit Musterantworten | Obsidian |
+| [`03_Spickzettel.md`](03_Spickzettel.md) / [`spickzettel/spickzettel.tex`](spickzettel/spickzettel.tex) | 1-Seiten-Spickzettel (Formeln, Zahlen, Zeitplan) | Obsidian / TeXstudio |
+| [`04_Quellen.md`](04_Quellen.md) | Quellenverzeichnis inkl. Kurzfassung für eine Quellenfolie | Obsidian |
 
 ## Ablauf für morgen früh (≈ 60–75 Min)
 
@@ -22,7 +22,7 @@ Thema: *Analog-Digital-Wandler, Amperemeter und Voltmeter* · Termin: **Fr, 02.1
    - Schaltbilder/Diagramme: aus dem Beamer-PDF als Bild übernehmen (*Snipping Tool* / `Win+Shift+S`) oder mit PowerPoint-Formen nachbauen
    - Sprechernotizen in das Notizfeld von PowerPoint kopieren
 3. **10-Min-Fassung vorbereiten (2 Min):** Folien 6, 7, 13 hinter die Danke-Folie verschieben (= Backup).
-4. **Proben (15–20 Min):** 2× laut mit Stoppuhr durchsprechen, danach `03_QA_Vorbereitung.md` (⭐-Fragen) lesen.
+4. **Proben (15–20 Min):** 2× laut mit Stoppuhr durchsprechen, danach `02_QA_Vorbereitung.md` (⭐-Fragen) lesen.
 5. **Spickzettel drucken:** `spickzettel/spickzettel.tex` kompilieren (1 Seite A4).
 
 ## 15 Min ↔ 10 Min
@@ -44,4 +44,4 @@ Im Beamer-Deck umschalten: in `slides/praesentation.tex` Zeile `\kurzfassungfals
 
 ## Fachliche Prüfung
 
-Alle Rechenbeispiele (LSB-Werte, Belastungsfehler, Bürdenspannung, Messbereichserweiterung, SAR-Beispiel, Genauigkeitsangabe, Zeitplan-Summen) wurden programmatisch nachgerechnet. Quellen: siehe [`05_Quellen.md`](05_Quellen.md).
+Alle Rechenbeispiele (LSB-Werte, Belastungsfehler, Bürdenspannung, Messbereichserweiterung, SAR-Beispiel, Genauigkeitsangabe, Zeitplan-Summen) wurden programmatisch nachgerechnet. Quellen: siehe [`04_Quellen.md`](04_Quellen.md).
