@@ -1,0 +1,97 @@
+% Spickzettel – 1 Seite A4 – pdfLaTeX (TeXstudio + MiKTeX)
+\documentclass[11pt]{extarticle}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=12mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}\sisetup{locale=DE}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{enumitem}\setlist{nosep,leftmargin=*}
+\usepackage{xcolor}
+\definecolor{akzent}{RGB}{0,82,147}
+\usepackage{titlesec}
+\titleformat{\section}{\color{akzent}\bfseries\normalsize}{}{0pt}{}
+\titlespacing*{\section}{0pt}{5pt}{2pt}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{3pt}
+\setlength{\columnsep}{8mm}
+
+\begin{document}
+{\Large\color{akzent}\textbf{Spickzettel: Voltmeter, Amperemeter \& ADC}}\hfill Präsentation 02.10.2026\par
+\vspace{1mm}\hrule\vspace{2mm}
+
+\fcolorbox{akzent}{akzent!6}{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{1.} Voltmeter \emph{parallel \& hochohmig} -- Amperemeter \emph{in Reihe \& niederohmig}\quad
+\textbf{2.} ADC = Abtasten $\to$ Quantisieren $\to$ Codieren\quad
+\textbf{3.} Im Multimeter: jede Messung = Spannungsmessung + ADC}}
+
+\begin{multicols}{2}
+\section*{Messgeräte}
+\small\begin{tabular}{@{}lll@{}}
+\toprule
+ & Voltmeter & Amperemeter\\ \midrule
+Anschluss & parallel & in Reihe\\
+ideal $R_i$ & $\infty$ & 0\\
+real (DMM) & $\approx\SI{10}{\mega\ohm}$ & Shunt (m$\Omega$\dots$\Omega$)\\
+Fehler & Belastungsfehler & Bürdenspannung\\
+falsch & Reihe: geht nicht & parallel: \textbf{Kurzschluss!}\\
+\bottomrule
+\end{tabular}\normalsize
+
+\smallskip
+$n=\frac{\text{neu}}{\text{alt}}$,\quad $R_V=(n-1)R_i$,\quad $R_N=\dfrac{R_i}{n-1}$\\
+Kleines $R$ $\to$ spannungsrichtig, großes $R$ $\to$ stromrichtig
+
+\section*{Sicherheit}
+\begin{itemize}
+\item Vor jeder Messung: \textbf{Buchse -- Drehschalter -- Bereich}
+\item CAT IV Hausanschluss \textbar{} CAT III Verteiler \textbar{} CAT II Steckergeräte \textbar{} CAT I/0 ohne Netz
+\item Niedrigste Kategorie (Gerät/Leitung) gilt
+\end{itemize}
+
+\section*{Wandlertypen}
+\begin{itemize}
+\item \textbf{Flash}: sehr schnell, grob, $2^n-1$ Komparatoren $\to$ Oszilloskop
+\item \textbf{SAR}: Bit für Bit, $n$ Schritte $\to$ Mikrocontroller
+\item \textbf{Dual-Slope}: langsam, genau, störfest $\to$ Multimeter
+\item \textbf{Sigma-Delta}: sehr hohe Auflösung $\to$ Audio, Waagen
+\end{itemize}
+
+\columnbreak
+\section*{ADC-Formeln (Beispiel 10 Bit, 5 V)}
+\small\begin{tabular}{@{}lll@{}}
+\toprule
+Stufen & $2^n$ & 1024\\
+LSB & $U_\text{ref}/2^n$ & \SI{4.88}{\milli\volt}\\
+Code & $\lfloor U_\text{ein}2^n/U_\text{ref}\rfloor$ & \SI{2.5}{\volt} $\to$ 512\\
+Spannung & $\text{Code}\cdot U_\text{ref}/2^n$ & 300 $\to$ \SI{1.46}{\volt}\\
+Q-Fehler & $\pm\frac12$\,LSB & $\pm\SI{2.44}{\milli\volt}$\\
+Nyquist & $f_A>2f_\text{max}$ & CD \SI{44.1}{\kilo\hertz}\\
+Alias & $|f_A-f_\text{sig}|$ & $15-10=\SI{5}{\kilo\hertz}$\\
+\bottomrule
+\end{tabular}\normalsize\\[1mm]
+8\,Bit \SI{19.5}{\milli\volt} \textbar{} 10\,Bit \SI{4.88}{\milli\volt} \textbar{} 12\,Bit \SI{1.22}{\milli\volt} \textbar{} 16\,Bit \SI{76}{\micro\volt}
+
+\section*{Rechenbeispiele}
+\begin{itemize}
+\item Teiler $2\times\SI{1}{\mega\ohm}$ an \SI{10}{\volt}: DMM \SI{4.76}{\volt}, Zeiger (\SI{200}{\kilo\ohm}) \SI{1.43}{\volt}
+\item \SI{5}{\volt}/\SI{25}{\ohm} + \SI{1}{\ohm} Shunt: \SI{192}{\milli\ampere} statt 200
+\item SAR 4\,Bit, \SI{16}{\volt}, \SI{11.3}{\volt} $\to 1011_2 = 11$
+\item $\pm$(1\,\% + 2 Digits) @ \SI{100.0}{\volt} $\to$ 98,8\dots\SI{101.2}{\volt}
+\item 3½ Stellen = 1999 Counts; 6000 Counts @ \SI{6}{\volt} $\to$ \SI{1}{\milli\volt}
+\end{itemize}
+
+\section*{Zeitplan}
+\small\begin{tabular}{@{}lll@{}}
+Folie & 15 Min & 10 Min\\ \midrule
+1--3 Einstieg & 1:45 & 1:15\\
+4--8 Messgeräte & 5:15 & 2:45\\
+9--13 ADC & 5:30 & 3:40\\
+14--15 Abschluss & 2:00 & 1:30\\
+\end{tabular}\normalsize
+\end{multicols}
+\end{document}

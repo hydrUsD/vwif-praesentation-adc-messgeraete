@@ -1,0 +1,490 @@
+% =====================================================================
+%  Vom Messwert zur Zahl – Voltmeter, Amperemeter und ADC
+%  VWIF | Ausbildungsinhalte 022: Grundlagen der Elektrotechnik
+% ---------------------------------------------------------------------
+%  Kompilieren (TeXstudio + MiKTeX): pdfLaTeX, 2x laufen lassen.
+%  MiKTeX installiert fehlende Pakete (circuitikz, pgfplots) automatisch.
+%
+%  15-Min- vs. 10-Min-Fassung:  unten \kurzfassungfalse / \kurzfassungtrue
+%  Sprechernotizen anzeigen:    \setbeameroption{...} unten einkommentieren
+% =====================================================================
+\documentclass[aspectratio=169,11pt]{beamer}
+
+% ---------- Fassung wählen ------------------------------------------
+\newif\ifkurzfassung
+\kurzfassungfalse      % false = 15 Min (alle Folien) | true = 10 Min
+% Optionale Folien werden in der Kurzfassung ans Ende (Backup) verschoben.
+
+% ---------- Notizen (optional) --------------------------------------
+% \setbeameroption{show notes on second screen=right} % Notizen rechts
+% \setbeameroption{show only notes}                    % nur Notizen drucken
+\usepackage{pgfpages}
+
+% ---------- Pakete ---------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage{lmodern}
+\usepackage{textcomp}
+% Unicode-Zeichen in Notizen (pdfLaTeX)
+\DeclareUnicodeCharacter{2192}{\ensuremath{\rightarrow}}
+\DeclareUnicodeCharacter{2248}{\ensuremath{\approx}}
+\DeclareUnicodeCharacter{03A9}{\ensuremath{\Omega}}
+\DeclareUnicodeCharacter{2212}{\ensuremath{-}}
+\usepackage{amsmath}
+\usepackage{siunitx}
+\sisetup{locale=DE, per-mode=symbol, range-phrase={ bis }, range-units=single}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
+\usepackage[european,siunitx]{circuitikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+
+% ---------- Neutrales Design (an Firmenvorlage anpassen) -------------
+\usetheme{default}
+\definecolor{akzent}{RGB}{0,82,147}     % <- Firmenfarbe 1 eintragen
+\definecolor{akzent2}{RGB}{230,120,0}   % <- Firmenfarbe 2 eintragen
+\definecolor{grau}{RGB}{110,110,110}
+\setbeamercolor{frametitle}{fg=akzent}
+\setbeamercolor{title}{fg=akzent}
+\setbeamercolor{structure}{fg=akzent}
+\setbeamercolor{block title}{bg=akzent,fg=white}
+\setbeamercolor{block body}{bg=akzent!8}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\color{grau}\scriptsize\insertframenumber\,/\,\inserttotalframenumber\hspace*{4mm}\vspace*{2mm}}
+
+% Kernaussage-Box (entspricht .highlight-box)
+\newcommand{\kernaussage}[1]{%
+  \begin{beamercolorbox}[sep=6pt,rounded=true]{block body}%
+  \textbf{#1}\end{beamercolorbox}}
+
+% Messketten-Navigationsleiste (Variante C aus Folie 2); #1 = aktives Glied 1..5
+\newcommand{\messkette}[1]{%
+  \begin{tikzpicture}[every node/.style={font=\tiny,minimum height=4mm,inner sep=2pt,
+      rounded corners=1pt,text width=17mm,align=center}]
+    \foreach \i/\t in {1/Messgröße,2/Messgerät,3/Aufbereitung,4/ADC,5/Anzeige}{
+      \ifnum\i=#1 \node[fill=akzent,text=white] (n\i) at (\i*2.0,0) {\t};
+      \else \node[fill=akzent!15,text=akzent] (n\i) at (\i*2.0,0) {\t}; \fi}
+    \foreach \i [evaluate=\i as \j using int(\i+1)] in {1,...,4}
+      \draw[-{Stealth},akzent] (n\i) -- (n\j);
+  \end{tikzpicture}}
+
+\title{Vom Messwert zur Zahl}
+\subtitle{Voltmeter, Amperemeter und Analog-Digital-Wandler}
+\author{Paul Heuwer}                       % <- ggf. anpassen
+\institute{VWIF \textbar{} Ausbildungsinhalte 022: Grundlagen der Elektrotechnik}
+\date{02.10.2026}
+
+% =====================================================================
+%  Optionale Folien als Makros (werden je nach Fassung platziert)
+% =====================================================================
+\newcommand{\folieMessbereich}{%
+\begin{frame}{Messbereichserweiterung}
+  \kernaussage{Vorwiderstand (Voltmeter) bzw. Shunt (Amperemeter) erweitern den Messbereich.}
+  \vspace{2mm}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \centering\textbf{Voltmeter: $R_V$ in Reihe}\\[1mm]
+    \begin{circuitikz}[scale=0.75,transform shape]
+      \draw (0,0) to[R,l=$R_V$,o-] (2.5,0) to[voltmeter,l=$R_i$,-o] (5,0);
+    \end{circuitikz}\\[1mm]
+    $R_V = (n-1)\cdot R_i$
+    \column{0.48\textwidth}
+    \centering\textbf{Amperemeter: $R_N$ parallel}\\[1mm]
+    \begin{circuitikz}[scale=0.75,transform shape]
+      \draw (0,0) to[short,o-] (1,0) to[ammeter,l=$R_i$] (4,0) to[short,-o] (5,0);
+      \draw (1,0) -- (1,-1.3) to[R,l_=$R_N$] (4,-1.3) -- (4,0);
+    \end{circuitikz}\\[1mm]
+    $R_N = \dfrac{R_i}{n-1}$
+  \end{columns}
+  \vspace{3mm}
+  \small Messwerk: \SI{100}{\micro\ampere} Vollausschlag, $R_i=\SI{1}{\kilo\ohm}$, $n=100$:\quad
+  \\[1mm]
+  \SI{10}{\volt}-Bereich $\Rightarrow R_V=\SI{99}{\kilo\ohm}$ \qquad
+  \SI{10}{\milli\ampere}-Bereich $\Rightarrow R_N\approx\SI{10.1}{\ohm}$
+  \note{Vorwiderstand übernimmt den Großteil der Spannung, Shunt den Großteil des Stroms.
+  Beispiel: 100 µA / 1 kΩ soll 10 V messen: Faktor 100, also 99 kΩ.}
+\end{frame}}
+
+\newcommand{\folieRichtig}{%
+\begin{frame}{Spannungsrichtige vs.\ stromrichtige Messung}
+  \kernaussage{Wer U und I gleichzeitig misst, verfälscht immer einen der beiden Werte.}
+  \begin{columns}[T]
+    \column{0.48\textwidth}\centering
+    \textbf{Spannungsrichtig}\\[1mm]
+    \begin{circuitikz}[scale=0.7,transform shape]
+      \draw (0,0) to[ammeter] (2.5,0) -- (4,0) to[R,l=$R$] (4,-2.5) -- (0,-2.5);
+      \draw (2.8,0) to[voltmeter] (2.8,-2.5);
+      \draw (0,0) to[battery1] (0,-2.5);
+    \end{circuitikz}\\
+    \small U korrekt, I zu groß\\ $\Rightarrow$ für \textbf{kleine} $R$
+    \column{0.48\textwidth}\centering
+    \textbf{Stromrichtig}\\[1mm]
+    \begin{circuitikz}[scale=0.7,transform shape]
+      \draw (0,0) -- (1,0) to[ammeter] (3.5,0) -- (4,0) to[R,l=$R$] (4,-2.5) -- (0,-2.5);
+      \draw (1,0) to[voltmeter] (1,-2.5);
+      \draw (0,0) to[battery1] (0,-2.5);
+    \end{circuitikz}\\
+    \small I korrekt, U zu groß\\ $\Rightarrow$ für \textbf{große} $R$
+  \end{columns}
+  \note{Faustregel: kleine Widerstände spannungsrichtig, große Widerstände stromrichtig.}
+\end{frame}}
+
+\newcommand{\folieSAR}{%
+\begin{frame}{SAR-Wandler Schritt für Schritt}
+  \kernaussage{Wie beim Zahlenraten: jeder Schritt halbiert den Suchbereich.}
+  \small 4 Bit, $U_\text{ref}=\SI{16}{\volt}$ ($\Rightarrow$ 1\,LSB $=\SI{1}{\volt}$), $U_\text{ein}=\SI{11.3}{\volt}$\\[2mm]
+  \centering
+  \begin{tabular}{clccc}
+    \toprule
+    Schritt & Bit testen & Vergleich & $\le \SI{11.3}{\volt}$? & Bit \\
+    \midrule
+    1 & MSB (8) & \SI{8}{\volt}            & ja   & \textbf{1}\\ \pause
+    2 & 4       & $8+4=\SI{12}{\volt}$     & nein & \textbf{0}\\ \pause
+    3 & 2       & $8+2=\SI{10}{\volt}$     & ja   & \textbf{1}\\ \pause
+    4 & LSB (1) & $10+1=\SI{11}{\volt}$    & ja   & \textbf{1}\\
+    \bottomrule
+  \end{tabular}\\[3mm] \pause
+  Ergebnis: $\mathbf{1011_2 = 11}$ $\Rightarrow$ \SI{11}{\volt} \quad (Rest \SI{0.3}{\volt} $<$ 1\,LSB = Quantisierungsfehler)
+  \note{n Bit brauchen genau n Vergleichsschritte -- deshalb schnell genug für Mikrocontroller.}
+\end{frame}}
+
+% =====================================================================
+\begin{document}
+
+% ---------------------------------------------------------------- 1
+\begin{frame}[plain]
+  \titlepage
+  \note{Begrüßung. „Ich zeige euch heute, was passiert, wenn wir mit dem Multimeter messen –
+  und wie aus einer analogen Spannung eine Zahl auf dem Display wird.“ (0:20)}
+\end{frame}
+
+% ---------------------------------------------------------------- 2
+\begin{frame}{Roter Faden: Die Messkette}
+  \centering\vspace{4mm}
+  \begin{tikzpicture}[box/.style={draw=akzent,thick,rounded corners,minimum width=24mm,
+      minimum height=13mm,align=center,font=\small},hl/.style={box,fill=akzent,text=white}]
+    \node[box] (a) {Messgröße\\$U$, $I$};
+    \node[hl,right=5mm of a] (b) {Voltmeter /\\Amperemeter};
+    \node[box,right=5mm of b] (c) {Signal-\\aufbereitung};
+    \node[hl,right=5mm of c] (d) {ADC\\analog$\to$digital};
+    \node[box,right=5mm of d] (e) {Anzeige /\\µC / PC};
+    \foreach \x/\y in {a/b,b/c,c/d,d/e} \draw[-{Stealth},thick,akzent] (\x) -- (\y);
+  \end{tikzpicture}
+  \vspace{8mm}
+  \begin{enumerate}
+    \item \textbf{Voltmeter \& Amperemeter} -- wie wird gemessen?
+    \item \textbf{Analog-Digital-Wandler} -- wie wird daraus eine Zahl?
+    \item \textbf{Alles zusammen} im Digitalmultimeter
+  \end{enumerate}
+  \note{Egal ob Multimeter, Handy oder Steuergerät: ein digitaler Messwert entsteht immer in
+  dieser Kette. Meine Themen = die farbigen Glieder. (0:40)}
+\end{frame}
+
+% ---------------------------------------------------------------- 3
+\begin{frame}{Warum das Thema?}
+  \messkette{1}\vspace{3mm}
+  \kernaussage{Die Welt ist analog, Rechner sind digital -- der ADC ist die Brücke.}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \textbf{Analog}
+    \begin{itemize}
+      \item stufenlos, unendlich viele Werte
+      \item Temperatur, Druck, Spannung
+    \end{itemize}
+    \begin{tikzpicture}\begin{axis}[width=6cm,height=3cm,axis lines=none]
+      \addplot[akzent,thick,domain=0:360,samples=80]{sin(x)};
+    \end{axis}\end{tikzpicture}
+    \column{0.48\textwidth}
+    \textbf{Digital}
+    \begin{itemize}
+      \item endlich viele Zahlen
+      \item Multimeter, Handy, Arduino \texttt{analogRead()}
+    \end{itemize}
+    \begin{tikzpicture}\begin{axis}[width=6cm,height=3cm,axis lines=none]
+      \addplot[akzent2,thick,const plot,domain=0:360,samples=17]{round(4*sin(x))/4};
+    \end{axis}\end{tikzpicture}
+  \end{columns}
+  \note{„Eine Spannung kann jeden Wert annehmen. Ein Computer kennt nur endlich viele Zahlen.
+  Irgendwo muss übersetzt werden – das macht der ADC.“ 10-Min: nur 1 Satz. (0:45 | 0:30)}
+\end{frame}
+
+% ---------------------------------------------------------------- 4
+\begin{frame}{Voltmeter: parallel \& hochohmig}
+  \messkette{2}\vspace{2mm}
+  \begin{columns}[T]
+    \column{0.42\textwidth}
+    \begin{circuitikz}[scale=0.8,transform shape]
+      \draw (0,0) to[V,v<=\SI{10}{\volt}] (0,3) -- (2,3)
+            to[R,l=$R_1{=}\SI{1}{\mega\ohm}$] (2,1.5)
+            to[R,l=$R_2{=}\SI{1}{\mega\ohm}$] (2,0) -- (0,0);
+      \draw (2,1.5) -- (4.6,1.5) to[voltmeter,l=$R_i$] (4.6,0) -- (2,0);
+    \end{circuitikz}
+    \column{0.56\textwidth}
+    \begin{itemize}
+      \item Anschluss \textbf{parallel} zum Bauteil
+      \item ideal $R_i\to\infty$, real (DMM) $\approx\SI{10}{\mega\ohm}$
+      \item Gefahr: \textbf{Belastungsfehler}
+    \end{itemize}
+    \small
+    \begin{tabular}{lrr}
+      \toprule
+      Messgerät & $R_i$ & Anzeige\\ \midrule
+      ideal & $\infty$ & \SI{5.00}{\volt}\\
+      Digitalmultimeter & \SI{10}{\mega\ohm} & \SI{4.76}{\volt}\\
+      Zeigerinstr. (\SI{20}{\kilo\ohm/\volt}) & \SI{200}{\kilo\ohm} & \SI{1.43}{\volt}\\
+      \bottomrule
+    \end{tabular}
+  \end{columns}
+  \vspace{2mm}
+  \kernaussage{Voltmeter: parallel anschließen, Innenwiderstand möglichst groß.}
+  \note{Parallel abgreifen. Möglichst kein Messstrom → R\_i groß. DMM 10 MΩ parallel zu R2:
+  1 MΩ || 10 MΩ = 0,909 MΩ → 4,76 V statt 5 V (−4,8 \%). Zeigerinstrument: nur 1,43 V. (1:15)}
+\end{frame}
+
+% ---------------------------------------------------------------- 5
+\begin{frame}{Amperemeter: in Reihe \& niederohmig}
+  \messkette{2}\vspace{2mm}
+  \begin{columns}[T]
+    \column{0.42\textwidth}
+    \begin{circuitikz}[scale=0.8,transform shape]
+      \draw (0,0) to[V,v<=\SI{5}{\volt}] (0,3) to[ammeter] (3,3)
+            to[R,l=\SI{25}{\ohm}] (3,0) -- (0,0);
+    \end{circuitikz}\\[2mm]
+    \small Im DMM: Shunt\\
+    \begin{circuitikz}[scale=0.7,transform shape]
+      \draw (0,0) to[short,o-,i=$I$] (1,0) to[R,l=$R_\text{Shunt}$,v_=$U_\text{Shunt}$] (3,0) to[short,-o] (4,0);
+    \end{circuitikz}
+    \column{0.56\textwidth}
+    \begin{itemize}
+      \item Anschluss \textbf{in Reihe} -- Kreis auftrennen
+      \item ideal $R_i\to 0$
+      \item Prinzip: $U_\text{Shunt}=I\cdot R_\text{Shunt}$ \\ $\Rightarrow$ intern eine \textbf{Spannungsmessung}
+      \item Spannungsabfall am Gerät = \textbf{Bürdenspannung}
+    \end{itemize}
+    \small Beispiel: \SI{5}{\volt}/\SI{25}{\ohm}: ideal \SI{200}{\milli\ampere};
+    mit \SI{1}{\ohm} Shunt: \SI{192}{\milli\ampere} ($-\SI{3.8}{\percent}$)
+  \end{columns}
+  \vspace{2mm}
+  \kernaussage{Amperemeter: in Reihe anschließen, Innenwiderstand möglichst klein.}
+  \note{Kreis auftrennen, Gerät hineinsetzen. Soll den Strom nicht bremsen. Trick: Shunt +
+  Spannungsmessung, I = U/R → auch ein Amperemeter ist innen ein Voltmeter! (1:15)}
+\end{frame}
+
+% ---------------------------------------------------------------- 6/7 (optional)
+\ifkurzfassung\else
+  \folieMessbereich
+  \folieRichtig
+\fi
+
+% ---------------------------------------------------------------- 8
+\begin{frame}{Sicherheit beim Messen}
+  \kernaussage{Gefährlichster Klassiker: Spannung messen, während das Gerät auf Strom steht = Kurzschluss.}
+  \begin{columns}[T]
+    \column{0.45\textwidth}
+    \begin{itemize}
+      \item Strombuchse $\approx \SI{0}{\ohm}$ $\Rightarrow$ Sicherung / Lichtbogen
+      \item Vor \emph{jeder} Messung prüfen:\\ \textbf{Buchse -- Drehschalter -- Bereich}
+      \item Gerät \emph{und} Messleitungen müssen zur Messkategorie passen
+    \end{itemize}
+    \column{0.52\textwidth}
+    \small
+    \begin{tabular}{@{}lp{4.4cm}@{}}
+      \toprule
+      \multicolumn{2}{@{}l}{Messkategorien (DIN EN 61010)}\\ \midrule
+      CAT IV & Hausanschluss, Zähler\\
+      CAT III & Gebäudeinstallation, Verteiler\\
+      CAT II & Geräte mit Netzstecker\\
+      CAT I / 0 & ohne direkte Netzverbindung\\
+      \bottomrule
+    \end{tabular}\\[1mm]
+    \footnotesize Je näher an der Einspeisung, desto höher die nötige Kategorie.
+  \end{columns}
+  \note{Steht das Gerät auf Strom und ich gehe an eine Spannung → Kurzschluss durch das
+  niederohmige Gerät. CAT-Angabe = wo darf ich das Gerät einsetzen. 10-Min: nur Kurzschluss. (1:00 | 0:45)}
+\end{frame}
+
+% ---------------------------------------------------------------- 9
+\begin{frame}{ADC: die Grundidee}
+  \messkette{4}\vspace{1mm}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \begin{tikzpicture}
+      \begin{axis}[width=7.6cm,height=5cm,xlabel={Zeit},ylabel={Code},
+        ymin=-0.2,ymax=7.5,ytick={0,...,7},
+        yticklabels={000,001,010,011,100,101,110,111},
+        yticklabel style={font=\tiny},xticklabels={},xlabel style={font=\small},
+        ylabel style={font=\small},grid=major,grid style={gray!20}]
+        \addplot[gray,thick,domain=0:10,samples=100]{3.5+3.4*sin(36*x)};
+        \addplot[akzent2,very thick,const plot,domain=0:10,samples=11]{round(3.5+3.4*sin(36*x))};
+        \addplot[akzent,only marks,mark=*,mark size=1.6pt,domain=0:10,samples=11]{3.5+3.4*sin(36*x)};
+      \end{axis}
+    \end{tikzpicture}
+    \column{0.43\textwidth}
+    \begin{enumerate}
+      \item \textbf{Abtasten} -- Momentanwert zu festen Zeitpunkten (Sample \& Hold)
+      \item \textbf{Quantisieren} -- nächstgelegene Stufe
+      \item \textbf{Codieren} -- Stufennummer als Binärzahl
+    \end{enumerate}
+  \end{columns}
+  \kernaussage{Aus einer glatten Kurve wird eine Treppe aus Zahlen.}
+  \note{Zwei Vergröberungen: zeitlich (Abtasten) und wertmäßig (Quantisieren). Ergebnis:
+  Stufennummer als Binärzahl. (1:00 | 0:50)}
+\end{frame}
+
+% ---------------------------------------------------------------- 10
+\begin{frame}{Auflösung \& LSB}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \[ U_\text{LSB}=\frac{U_\text{ref}}{2^n} \qquad \text{Code}=\left\lfloor\frac{U_\text{ein}\cdot 2^n}{U_\text{ref}}\right\rfloor \]
+    Quantisierungsfehler: \textbf{$\pm\frac12$\,LSB}\\[2mm]
+    \small
+    \begin{tabular}{rrr}
+      \toprule
+      Bit & Stufen & LSB @ \SI{5}{\volt}\\ \midrule
+      8 & 256 & \SI{19.5}{\milli\volt}\\
+      \textbf{10} & \textbf{1\,024} & \textbf{\SI{4.88}{\milli\volt}}\\
+      12 & 4\,096 & \SI{1.22}{\milli\volt}\\
+      16 & 65\,536 & \SI{76}{\micro\volt}\\ \bottomrule
+    \end{tabular}
+    \column{0.48\textwidth}
+    \begin{block}{Arduino Uno (ATmega328P, 10 Bit, \SI{5}{\volt})}
+      \small
+      $U_\text{ein}=\SI{2.5}{\volt}$ $\Rightarrow$ $2{,}5\cdot1024/5 = \mathbf{512}$\\[2mm]
+      \texttt{analogRead()} $=300$ $\Rightarrow$ $300\cdot\SI{5}{\volt}/1024\approx\mathbf{\SI{1.46}{\volt}}$
+    \end{block}
+    \vspace{2mm}
+    \footnotesize\textbf{Achtung:} Auflösung $\neq$ Genauigkeit (Referenz-, Offset-, Linearitätsfehler kommen hinzu).
+  \end{columns}
+  \vspace{2mm}
+  \kernaussage{Die Bitzahl bestimmt, wie fein der ADC auflöst.}
+  \note{10 Bit = 1024 Stufen, bei 5 V knapp 4,9 mV pro Stufe = LSB. Kleiner sieht der ADC
+  nicht → Rundungsfehler bis ½ LSB. 2,5 V = Hälfte → 512. (1:15 | 1:00)}
+\end{frame}
+
+% ---------------------------------------------------------------- 11
+\begin{frame}{Abtasttheorem \& Aliasing}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \begin{tikzpicture}
+      \begin{axis}[width=7.6cm,height=4.6cm,axis lines=middle,xticklabels={},yticklabels={},
+        xmin=0,xmax=1.02,ymin=-1.3,ymax=1.3,legend style={font=\tiny,at={(0.5,-0.05)},anchor=north,legend columns=3}]
+        \addplot[gray,domain=0:1,samples=300]{sin(360*10*x)};
+        \addlegendentry{Signal \SI{10}{\kilo\hertz}}
+        \addplot[red,very thick,dashed,domain=0:1,samples=200]{-sin(360*5*x)};
+        \addlegendentry{Alias \SI{5}{\kilo\hertz}}
+        \addplot[akzent,only marks,mark=*,mark size=1.6pt,domain=0:1,samples=16]{sin(360*10*x)};
+        \addlegendentry{Abtastung \SI{15}{\kilo\hertz}}
+      \end{axis}
+    \end{tikzpicture}
+    \footnotesize (Zeitachse: \SI{1}{\milli\second})
+    \column{0.43\textwidth}
+    \[ f_\text{Abtast} > 2\cdot f_\text{max} \]
+    \begin{itemize}\small
+      \item verletzt $\Rightarrow$ \textbf{Aliasing}: falsche, niedrigere Frequenz
+      \item Gegenmittel: \textbf{Anti-Aliasing-Tiefpass} vor dem ADC
+      \item Audio-CD: \SI{44.1}{\kilo\hertz} für Töne bis $\approx$\SI{20}{\kilo\hertz}
+    \end{itemize}
+  \end{columns}
+  \kernaussage{Mehr als doppelt so schnell abtasten wie die höchste Signalfrequenz.}
+  \note{Wagenrad-Effekt im Film = Aliasing. 10 kHz mit 15 kHz abgetastet → scheinbar 5 kHz.
+  CD: 44,1 kHz, wir hören bis ca. 20 kHz. 10-Min: CD weglassen. (1:00 | 0:50)}
+\end{frame}
+
+% ---------------------------------------------------------------- 12
+\begin{frame}{Wandlerverfahren im Vergleich}
+  \begin{columns}[c]
+    \column{0.36\textwidth}
+    \begin{tikzpicture}
+      \begin{axis}[width=5.6cm,height=5.2cm,xmin=0,xmax=10,ymin=0,ymax=10,
+        xtick=\empty,ytick=\empty,xlabel={Geschwindigkeit $\rightarrow$},
+        ylabel={Auflösung $\rightarrow$},axis lines=left,
+        nodes near coords,point meta=explicit symbolic,
+        every node near coord/.append style={font=\scriptsize,anchor=west}]
+        \addplot[only marks,mark=*,mark size=4pt,akzent] coordinates {
+          (8.8,2.2)[Flash] (5.5,5)[SAR] (1.2,6.6)[Dual-Slope] (2.6,9)[$\Sigma\Delta$]};
+      \end{axis}
+    \end{tikzpicture}
+    \column{0.62\textwidth}
+    \scriptsize
+    \begin{tabular}{@{}p{1.6cm}p{1.6cm}p{1.9cm}p{2.3cm}@{}}
+      \toprule
+      Verfahren & Tempo & Auflösung & Einsatz\\ \midrule
+      Flash & sehr hoch & $\approx$6--8 Bit & Oszilloskop, Video\\
+      SAR & mittel & $\approx$8--18 Bit & \textbf{Mikrocontroller}\\
+      Dual-Slope & langsam & hoch, störfest & \textbf{Multimeter}\\
+      Sigma-Delta & langsam--mittel & $\approx$16--24 Bit & Audio, Waagen\\
+      \bottomrule
+    \end{tabular}\\[1mm]
+    \tiny typische Richtwerte
+  \end{columns}
+  \vspace{2mm}
+  \kernaussage{Es gibt nicht den besten ADC: Geschwindigkeit gegen Auflösung.}
+  \note{Flash: 1 Komparator je Stufe (8 Bit = 255). SAR: Zahlenraten, Arduino.
+  Integrierend: langsam, genau, störfest → Multimeter. Sigma-Delta: Audio/Präzision. (1:15 | 1:00)}
+\end{frame}
+
+% ---------------------------------------------------------------- 13 (optional)
+\ifkurzfassung\else \folieSAR \fi
+
+% ---------------------------------------------------------------- 14
+\begin{frame}{Alles zusammen: das Digitalmultimeter}
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[b/.style={draw=akzent,thick,rounded corners,align=center,font=\scriptsize,
+      minimum height=9mm,minimum width=19mm},v/.style={b,fill=akzent!12},a/.style={b,fill=akzent2!20}]
+    \node[v] (vb) at (0,0.8) {V/$\Omega$-Buchse};
+    \node[v,right=4mm of vb] (t) {Spannungsteiler\\(\SI{10}{\mega\ohm})};
+    \node[a] (ab) at (0,-0.8) {mA/A-Buchse};
+    \node[a,right=4mm of ab] (f) {Sicherung};
+    \node[a,right=4mm of f] (s) {Shunt\\$U=I\cdot R$};
+    \node[b,right=8mm of s,yshift=8mm] (g) {ggf. TRMS-\\Gleichrichter};
+    \node[b,fill=akzent,text=white,right=4mm of g] (adc) {ADC\\(z.\,B. Dual-Slope)};
+    \node[b,right=4mm of adc] (d) {Display\\z.\,B. 6000 Counts};
+    \draw[-{Stealth}] (vb)--(t); \draw[-{Stealth}] (t) -| ($(g.west)+(-3mm,0)$) -- (g);
+    \draw[-{Stealth}] (ab)--(f); \draw[-{Stealth}] (f)--(s);
+    \draw[-{Stealth}] (s) -| ($(g.west)+(-3mm,0)$);
+    \draw[-{Stealth}] (g)--(adc); \draw[-{Stealth}] (adc)--(d);
+  \end{tikzpicture}}
+  \vspace{3mm}
+  \begin{columns}[T]
+    \column{0.48\textwidth}\small
+    \textbf{Counts:} 3½ Stellen = 1\,999 Counts;\\ 6\,000 Counts $\Rightarrow$ \SI{6}{\volt}-Bereich auf \SI{1}{\milli\volt} genau ablesbar\\[1mm]
+    Klassiker: \textbf{ICL7106} (3½-stelliger Dual-Slope-ADC)
+    \column{0.48\textwidth}\small
+    \textbf{Genauigkeit lesen:} $\pm$(1\,\% v.\,Mw.\ + 2 Digits)\\
+    Anzeige \SI{100.0}{\volt}: $\pm(\SI{1.0}{\volt}+\SI{0.2}{\volt})$\\
+    $\Rightarrow$ wahrer Wert \textbf{\SIrange{98.8}{101.2}{\volt}}
+  \end{columns}
+  \vspace{2mm}
+  \kernaussage{Im Multimeter wird jede Messung auf Spannungsmessung + ADC zurückgeführt.}
+  \note{Spannung: Teiler wählt Bereich und bildet die 10 MΩ. Strom: Sicherung + Shunt → wieder
+  Spannung. Dann ADC → Zahl. Genauigkeit: 1 \% + 2 Digits bei 100,0 V → 98,8–101,2 V. (1:15 | 1:00)}
+\end{frame}
+
+% ---------------------------------------------------------------- 15
+\begin{frame}{Fazit}
+  \begin{enumerate}
+    \setlength{\itemsep}{4mm}
+    \item \textbf{Voltmeter} parallel \& hochohmig -- \textbf{Amperemeter} in Reihe \& niederohmig
+    \item \textbf{ADC} = Abtasten + Quantisieren + Codieren;\quad
+          $U_\text{LSB}=U_\text{ref}/2^n$;\quad $f_\text{A}>2f_\text{max}$
+    \item Im \textbf{Multimeter} läuft alles auf Spannungsmessung + ADC hinaus
+  \end{enumerate}
+  \vspace{8mm}
+  \centering{\Large\color{akzent}\textbf{Vielen Dank -- Fragen?}}
+  \note{Drei Take-aways vorlesen, dann Fragen. Backup-Folien liegen hinter dieser Folie. (0:45 | 0:30)}
+\end{frame}
+
+% ---------------------------------------------------------------- Backup
+\ifkurzfassung
+  \appendix
+  \begin{frame}[plain]\centering\vfill{\Large\color{grau}Backup}\vfill\end{frame}
+  \folieMessbereich
+  \folieRichtig
+  \folieSAR
+\fi
+
+\end{document}

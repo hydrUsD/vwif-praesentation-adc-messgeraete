@@ -1,0 +1,15 @@
+# LaTeX-Build-Artefakte
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.pdf
+# Obsidian
+.obsidian/
+.DS_Store

@@ -1,0 +1,47 @@
+# Vom Messwert zur Zahl – Voltmeter, Amperemeter & ADC
+
+Präsentationsvorlage für **VWIF – Ausbildungsinhalte 022: Grundlagen der Elektrotechnik**
+Thema: *Analog-Digital-Wandler, Amperemeter und Voltmeter* · Termin: **Fr, 02.10.2026** · Dauer: **15 Min (kürzbar auf 10 Min)**
+
+## Inhalt des Repos
+
+| Datei | Zweck | Öffnen mit |
+|---|---|---|
+| [`01_Folieninhalt_und_Varianten.md`](01_Folieninhalt_und_Varianten.md) | **Hauptdokument**: alle 15 Folien mit Kernaussage, Folieninhalt, 2–3 Darstellungsvarianten, Sprechernotiz, Zeitplan | Obsidian |
+| [`slides/praesentation.tex`](slides/praesentation.tex) | Fertiges, kompilierbares **Beamer-Deck** (16:9) mit Schaltbildern & Diagrammen als Referenz/Vorschau | TeXstudio + MiKTeX |
+| [`03_QA_Vorbereitung.md`](03_QA_Vorbereitung.md) | Wahrscheinliche Rückfragen mit Musterantworten | Obsidian |
+| [`04_Spickzettel.md`](04_Spickzettel.md) / [`spickzettel/spickzettel.tex`](spickzettel/spickzettel.tex) | 1-Seiten-Spickzettel (Formeln, Zahlen, Zeitplan) | Obsidian / TeXstudio |
+| [`05_Quellen.md`](05_Quellen.md) | Quellenverzeichnis inkl. Kurzfassung für eine Quellenfolie | Obsidian |
+
+## Ablauf für morgen früh (≈ 60–75 Min)
+
+1. **Beamer-PDF erzeugen (5 Min):** `slides/praesentation.tex` in TeXstudio öffnen → *pdfLaTeX* zweimal laufen lassen (MiKTeX fragt ggf. nach dem Installieren von `circuitikz`/`pgfplots` → bestätigen). Das PDF ist deine visuelle Vorlage.
+2. **Firmenvorlage befüllen (30–40 Min):** `01_Folieninhalt_und_Varianten.md` in Obsidian neben PowerPoint öffnen und Folie für Folie übertragen:
+   - Folientitel = Überschrift, **Kernaussage** = Highlight-/Textbox unten
+   - pro Folie **eine** Darstellungsvariante wählen (A = am schnellsten umzusetzen)
+   - Schaltbilder/Diagramme: aus dem Beamer-PDF als Bild übernehmen (*Snipping Tool* / `Win+Shift+S`) oder mit PowerPoint-Formen nachbauen
+   - Sprechernotizen in das Notizfeld von PowerPoint kopieren
+3. **10-Min-Fassung vorbereiten (2 Min):** Folien 6, 7, 13 hinter die Danke-Folie verschieben (= Backup).
+4. **Proben (15–20 Min):** 2× laut mit Stoppuhr durchsprechen, danach `03_QA_Vorbereitung.md` (⭐-Fragen) lesen.
+5. **Spickzettel drucken:** `spickzettel/spickzettel.tex` kompilieren (1 Seite A4).
+
+## 15 Min ↔ 10 Min
+
+| Fassung | Folien | Sprechzeit |
+|---|---|---|
+| 15 Min | 1–15 | 14:30 |
+| 10 Min | ohne 6, 7, 13 (→ Backup) + gekürzte Notizen bei 3, 8, 11 | 9:10 |
+
+Im Beamer-Deck umschalten: in `slides/praesentation.tex` Zeile `\kurzfassungfalse` → `\kurzfassungtrue`. Die optionalen Folien landen dann automatisch hinter der Fazit-Folie als „Backup“.
+
+**Alternative Reihenfolge** (falls dir das lieber ist): ADC-Teil (9–13) vor die Messgeräte (4–8) ziehen und mit Folie 14 abschließen – die Messkette auf Folie 2 funktioniert für beide Reihenfolgen.
+
+## Hinweise zum Beamer-Deck
+
+- **Firmenfarben:** in der Präambel `akzent` und `akzent2` (RGB) anpassen.
+- **Sprechernotizen im PDF:** `\setbeameroption{show notes on second screen=right}` einkommentieren.
+- Inhalte wurden mit pdfLaTeX (TeX Live 2023) testkompiliert; MiKTeX installiert fehlende Pakete automatisch nach.
+
+## Fachliche Prüfung
+
+Alle Rechenbeispiele (LSB-Werte, Belastungsfehler, Bürdenspannung, Messbereichserweiterung, SAR-Beispiel, Genauigkeitsangabe, Zeitplan-Summen) wurden programmatisch nachgerechnet. Quellen: siehe [`05_Quellen.md`](05_Quellen.md).
