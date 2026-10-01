@@ -12,6 +12,7 @@ Thema: *Analog-Digital-Wandler, Amperemeter und Voltmeter* · Termin: **Fr, 02.1
 | [`02_QA_Vorbereitung.md`](02_QA_Vorbereitung.md) | Wahrscheinliche Rückfragen mit Musterantworten | Obsidian |
 | [`03_Spickzettel.md`](03_Spickzettel.md) / [`spickzettel/spickzettel.tex`](spickzettel/spickzettel.tex) | 1-Seiten-Spickzettel (Formeln, Zahlen, Zeitplan) | Obsidian / TeXstudio |
 | [`04_Quellen.md`](04_Quellen.md) | Quellenverzeichnis inkl. Kurzfassung für eine Quellenfolie | Obsidian |
+| [`05_Recherche_Nachschlagewerk.md`](05_Recherche_Nachschlagewerk.md) / [`recherche/recherche.tex`](recherche/recherche.tex) | **Recherche-Nachschlagewerk**: alle Rechercheergebnisse thematisch, mit Schnellnavigation, Formelindex, Glossar und Quellenkürzel je Fakt (TeX-Version mit klickbarem Inhaltsverzeichnis/Lesezeichen) | Obsidian / TeXstudio |
 
 ## Ablauf für morgen früh (≈ 60–75 Min)
 

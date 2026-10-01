@@ -1,0 +1,537 @@
+% =====================================================================
+%  Recherche-Nachschlagewerk: Voltmeter, Amperemeter & ADC
+%  VWIF | Ausbildungsinhalte 022 – Stand 01.10.2026
+%  Kompilieren: pdfLaTeX 2x (TeXstudio + MiKTeX)
+%  Navigation: klickbares Inhaltsverzeichnis, PDF-Lesezeichen,
+%              klickbare Quellenkürzel, Formel- und Glossarverweise
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage{lmodern}
+\usepackage[margin=22mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\sisetup{locale=DE, per-mode=symbol, range-phrase={ bis }, range-units=single}
+\usepackage{booktabs,tabularx,longtable,array}
+\usepackage{enumitem}\setlist{itemsep=1pt,topsep=3pt}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[hidelinks,bookmarksnumbered,bookmarksopen]{hyperref}
+\usepackage{bookmark}
+\usepackage{xurl}  % lange URLs umbrechen
+
+\definecolor{akzent}{RGB}{0,82,147}
+\definecolor{quelle}{RGB}{110,110,110}
+
+% ---------- Überschriften / Kopfzeile ---------------------------------
+\titleformat{\section}{\Large\bfseries\color{akzent}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{akzent!85!black}}{\thesubsection}{0.6em}{}
+\pagestyle{fancy}\fancyhf{}
+\lhead{\small\color{quelle}Recherche: Voltmeter, Amperemeter \& ADC}
+\rhead{\small\color{quelle}\hyperref[toc]{$\uparrow$ Inhalt}}
+\cfoot{\thepage}
+\setlength{\parindent}{0pt}\setlength{\parskip}{4pt}
+
+% ---------- Quellenkürzel (klickbar) ----------------------------------
+% \q{ET} -> [ET] verlinkt auf den Eintrag im Quellenschlüssel
+\newcommand{\q}[1]{\hyperlink{src:#1}{\textcolor{quelle}{\texttt{\footnotesize[#1]}}}}
+\newcommand{\qziel}[1]{\hypertarget{src:#1}{\texttt{[#1]}}}
+% Präsentationsbezug
+\newcommand{\folie}[1]{\textcolor{akzent}{\footnotesize\textsf{$\blacktriangleright$ Folie #1}}}
+% Boxen
+\newtcolorbox{beispiel}[1][]{colback=akzent!5,colframe=akzent!60,fonttitle=\bfseries,
+  title={Beispiel #1},sharp corners,boxrule=0.6pt}
+\newtcolorbox{hinweis}[1][Hinweis]{colback=orange!6,colframe=orange!70!black,
+  fonttitle=\bfseries,title={#1},sharp corners,boxrule=0.6pt}
+
+\hypersetup{pdftitle={Recherche-Nachschlagewerk: Voltmeter, Amperemeter und ADC},
+  pdfauthor={Paul Heuwer}}
+
+\begin{document}
+
+% =====================================================================
+\begin{titlepage}
+\centering\vspace*{30mm}
+{\Huge\bfseries\color{akzent} Recherche-Nachschlagewerk\par}
+\vspace{6mm}
+{\LARGE Voltmeter, Amperemeter \& Analog-Digital-Wandler\par}
+\vspace{12mm}
+{\large VWIF \textbar{} Ausbildungsinhalte 022: Grundlagen der Elektrotechnik\par}
+\vspace{4mm}
+{\large Begleitdokument zur Präsentation am 02.10.2026\par}
+\vfill
+\begin{hinweis}[So benutzt du dieses Dokument]
+\begin{itemize}
+  \item Inhaltsverzeichnis, Formel- und Glossarverweise sowie Quellenkürzel wie \q{ET} sind \textbf{anklickbar}.
+  \item Oben rechts auf jeder Seite: \emph{$\uparrow$ Inhalt} springt zurück zum Inhaltsverzeichnis.
+  \item \q{LB} = allgemeines Lehrbuchwissen, nicht aus einer der recherchierten Quellen.
+  \item \folie{x} = Inhalt kommt so in der Präsentation vor.
+  \item Alle Rechenbeispiele wurden nachgerechnet. Stand der Online-Quellen: 01.10.2026.
+\end{itemize}
+\end{hinweis}
+\end{titlepage}
+
+\phantomsection\label{toc}
+\tableofcontents
+\vspace{6mm}
+
+\section*{Schnellnavigation}
+\begin{tabularx}{\textwidth}{@{}Xl@{}}
+\toprule
+Ich suche \dots & Abschnitt\\ \midrule
+Wie schließe ich Volt-/Amperemeter an? & \ref{sec:volt}, \ref{sec:amp}\\
+Warum zeigt das Messgerät „falsch“ an? & \ref{sec:belastung}, \ref{sec:buerde}, \ref{sec:schaltungen}\\
+Wie funktioniert ein ADC? & \ref{sec:adc}\\
+Welche ADC-Bauarten gibt es? & \ref{sec:verfahren}\\
+Arduino \texttt{analogRead()} & \ref{sec:arduino}\\
+Was steckt im Multimeter? & \ref{sec:dmm}\\
+CAT II / III / IV & \ref{sec:sicherheit}\\
+Alle Formeln & \ref{sec:formeln}\\
+Begriff unklar & \ref{sec:glossar}\\
+Quellen & \ref{sec:quellen}\\
+\bottomrule
+\end{tabularx}
+
+\newpage
+% =====================================================================
+\section{Grundbegriffe und Messkette}\label{sec:grund}
+
+\subsection{Analog vs.\ digital}
+\begin{itemize}
+  \item \textbf{Analog:} stufenlos, beliebig viele Zwischenwerte (Spannung, Temperatur, Druck). \q{LB}
+  \item \textbf{Digital:} endlich viele Werte; Rechner und Mikrocontroller verarbeiten nur diese. \q{LB}
+  \item Ein ADC „wandelt eine Spannung in eine dazu proportionale Zahl“ um. \q{SWISS}
+\end{itemize}
+
+\subsection{Die Messkette}\label{sec:messkette}
+\folie{2}\\[2mm]
+\begin{center}
+\begin{tikzpicture}[b/.style={draw=akzent,thick,rounded corners,align=center,font=\small,
+    minimum height=11mm,minimum width=24mm}]
+  \node[b] (a) {Messgröße\\$U$, $I$};
+  \node[b,fill=akzent!12,right=4mm of a] (b) {Voltmeter /\\Amperemeter};
+  \node[b,right=4mm of b] (c) {Signal-\\aufbereitung};
+  \node[b,fill=akzent!12,right=4mm of c] (d) {ADC};
+  \node[b,right=4mm of d] (e) {Anzeige /\\µC / PC};
+  \foreach \x/\y in {a/b,b/c,c/d,d/e} \draw[-{Stealth},thick,akzent] (\x)--(\y);
+\end{tikzpicture}
+\end{center}
+
+\subsection{Ideales vs.\ reales Messgerät}
+Jedes reale Messgerät beeinflusst die Schaltung, in der es misst; Ziel ist eine minimale Rückwirkung. \q{ET}
+
+\begin{tabularx}{\textwidth}{@{}lll@{}}
+\toprule
+ & ideal & real\\ \midrule
+Voltmeter $R_i$ & $\infty$ & endlich, hoch (typ.\ $\geq\SI{1}{\mega\ohm}$; DMM $\approx\SI{10}{\mega\ohm}$) \q{ET}\,\q{LB}\\
+Amperemeter $R_i$ & 0 & klein, aber vorhanden (Beispiel $\approx\SI{5}{\ohm}$ analog) \q{ET}\\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section{Voltmeter}\label{sec:volt}
+
+\subsection{Anschluss}
+\textbf{Parallel} zum Messobjekt -- die Spannung wird zwischen zwei Punkten abgegriffen. \q{ET} \folie{4}
+
+\subsection{Innenwiderstand}
+\begin{itemize}
+  \item Soll möglichst \textbf{groß} sein, damit kaum Messstrom fließt. \q{ET}
+  \item Digitalmultimeter: typ.\ \SI{10}{\mega\ohm} (gängiger Herstellerwert, im eigenen Datenblatt prüfen). \q{LB}
+  \item Analoge Zeigerinstrumente: Angabe in \si{\ohm/\volt}, z.\,B.\ \SI{20}{\kilo\ohm/\volt} $\Rightarrow$ im \SI{10}{\volt}-Bereich \SI{200}{\kilo\ohm}. Ein \SI{1}{\milli\ampere}-Messwerk entspricht \SI{1}{\kilo\ohm/\volt}. \q{EL}
+\end{itemize}
+
+\subsection{Belastungsfehler}\label{sec:belastung}
+Der Innenwiderstand liegt parallel zum Messobjekt und verkleinert den wirksamen Widerstand $\Rightarrow$ angezeigte Spannung zu klein. \q{ET} \folie{4}
+\begin{equation}\label{f:teiler}
+U_2 = U\cdot\frac{R_2\parallel R_i}{R_1+R_2\parallel R_i}\qquad\text{mit}\qquad
+R_a\parallel R_b=\frac{R_a R_b}{R_a+R_b}
+\end{equation}
+
+\begin{beispiel}[(nachgerechnet)]
+Spannungsteiler $R_1=R_2=\SI{1}{\mega\ohm}$ an \SI{10}{\volt}, gemessen über $R_2$ (ideal \SI{5.00}{\volt}):\\[1mm]
+\begin{tabular}{@{}llllr@{}}
+\toprule
+Messgerät & $R_i$ & $R_2\parallel R_i$ & Anzeige & Fehler\\ \midrule
+ideal & $\infty$ & \SI{1}{\mega\ohm} & \SI{5.00}{\volt} & \SI{0}{\percent}\\
+DMM & \SI{10}{\mega\ohm} & \SI{0.909}{\mega\ohm} & \SI{4.76}{\volt} & \SI{-4.8}{\percent}\\
+Zeiger (\SI{20}{\kilo\ohm/\volt}) & \SI{200}{\kilo\ohm} & \SI{0.167}{\mega\ohm} & \SI{1.43}{\volt} & \SI{-71}{\percent}\\
+\bottomrule
+\end{tabular}
+\end{beispiel}
+Faustregel: Fehler bleibt klein, wenn $R_i\gg R_\text{Messobjekt}$. \q{ET}
+
+\subsection{Messbereichserweiterung mit Vorwiderstand}\label{sec:vorwiderstand}
+Vorwiderstand \textbf{in Reihe} zum Messwerk; je größer, desto höher der Messbereich. \q{EL}
+\begin{equation}\label{f:n}
+n=\frac{\text{neuer Messbereich}}{\text{alter Messbereich}}
+\end{equation}
+\begin{equation}\label{f:rv}
+R_V=(n-1)\cdot R_i \qquad\text{\q{ET}}
+\end{equation}
+\begin{beispiel}[\q{EL}]
+Messwerk \SI{100}{\micro\ampere} Vollausschlag, $R_i=\SI{1}{\kilo\ohm}$ $\Rightarrow$ Vollausschlag bei \SI{100}{\milli\volt}.
+Für \SI{10}{\volt}: Gesamtwiderstand \SI{100}{\kilo\ohm} $\Rightarrow$ Vorwiderstand \textbf{\SI{99}{\kilo\ohm}} ($n=100$).
+\end{beispiel}
+Hochwertige analoge Voltmeter besitzen zusätzlich einen Dämpfungswiderstand parallel gegen Überschwingen. \q{EL}
+
+% =====================================================================
+\section{Amperemeter}\label{sec:amp}
+
+\subsection{Anschluss}
+\textbf{In Reihe} -- Stromkreis auftrennen, der gesamte Strom fließt durch das Messgerät. \q{FLUKE}\,\q{ET} \folie{5}
+
+\subsection{Innenwiderstand und Shunt-Prinzip}\label{sec:shunt}
+\begin{itemize}
+  \item Innenwiderstand soll möglichst \textbf{klein} sein. \q{ET}
+  \item Im DMM fließt der Strom durch einen genau bekannten Shunt; gemessen wird die Spannung daran \q{LB}:
+\end{itemize}
+\begin{equation}\label{f:shuntI}
+I=\frac{U_\text{Shunt}}{R_\text{Shunt}}\qquad\Rightarrow\quad\text{Strommessung = Spannungsmessung}
+\end{equation}
+
+\subsection{Bürdenspannung}\label{sec:buerde}
+Spannungsabfall am Amperemeter (Shunt + Sicherung + Leitungen); fehlt der eigentlichen Schaltung. \q{LB}
+\begin{beispiel}[(nachgerechnet)]
+Last \SI{25}{\ohm} an \SI{5}{\volt} $\Rightarrow$ ideal \SI{200}{\milli\ampere}. Mit \SI{1}{\ohm} Shunt:
+$I=\SI{5}{\volt}/\SI{26}{\ohm}=\SI{192}{\milli\ampere}$ (\SI{-3.8}{\percent}), Bürdenspannung $\approx\SI{0.19}{\volt}$.
+\end{beispiel}
+
+\subsection{Messbereichserweiterung mit Shunt}\label{sec:nebenwiderstand}
+Kleiner Widerstand \textbf{parallel} zum Messwerk. \q{EL}
+\begin{equation}\label{f:rn}
+R_N=\frac{R_i}{n-1}\qquad\text{\q{ET}}
+\end{equation}
+Beispiel (nachgerechnet): \SI{100}{\micro\ampere}/\SI{1}{\kilo\ohm} auf \SI{10}{\milli\ampere} ($n=100$) $\Rightarrow R_N=\SI{1000}{\ohm}/99\approx\SI{10.1}{\ohm}$.
+
+\subsection{Strom messen ohne Auftrennen}
+Stromzange: AC über Stromwandler-Prinzip, DC über Hall-Sensor. \q{LB}
+
+% =====================================================================
+\section{Messschaltungen und Messfehler}\label{sec:schaltungen}
+
+\subsection{Spannungsrichtige Messung (Stromfehlerschaltung)}
+Voltmeter direkt am Messobjekt $\Rightarrow$ $U$ korrekt, $I$ enthält den Voltmeter-Messstrom (zu groß).
+Geeignet für \textbf{kleine} Widerstände ($R_{i,V}\gg R$). \q{ET}
+
+\subsection{Stromrichtige Messung (Spannungsfehlerschaltung)}
+Amperemeter direkt in Reihe zum Messobjekt, Voltmeter davor $\Rightarrow$ $I$ korrekt, $U$ enthält den Spannungsfall am Amperemeter (zu groß).
+Geeignet für \textbf{große} Widerstände ($R\gg R_{i,A}$). \q{ET}
+
+\subsection{Fehlerbegriffe}\label{sec:fehler}
+\begin{equation}\label{f:fehler}
+\Delta x = x - x_w \qquad\qquad f_\text{rel}=\frac{\Delta x}{x_w}\quad(\times\SI{100}{\percent})\qquad\text{\q{ET}}
+\end{equation}
+\textbf{Güteklasse} (analoge Messgeräte): Fehler in \% vom \emph{Messbereichsendwert} $\Rightarrow$ bei halbem Ausschlag ist der relative Fehler doppelt so groß. Messbereich daher so wählen, dass der Zeiger möglichst weit ausschlägt. \q{ET}\,\q{LB}
+
+% =====================================================================
+\section{Analog-Digital-Wandler -- Grundlagen}\label{sec:adc}
+
+\subsection{Die drei Schritte}\label{sec:schritte}
+\folie{9}
+\begin{enumerate}
+  \item \textbf{Abtasten} (zeitdiskret) -- Momentanwerte in festen Abständen; Abtastrate in Samples/s. \q{EP}
+  \item \textbf{Quantisieren} (wertdiskret) -- Zuordnung zur nächstgelegenen Stufe. \q{EP}
+  \item \textbf{Codieren} -- Stufennummer als Binärzahl. \q{SWISS}\,\q{LB}
+\end{enumerate}
+\textbf{Sample \& Hold:} Kondensator hält den abgetasteten Wert während der Wandlung konstant. \q{LB}
+
+\subsection{Auflösung und LSB}\label{sec:lsb}
+\folie{10}
+\begin{equation}\label{f:lsb}
+\text{Stufen}=2^n\qquad\qquad U_\text{LSB}=\frac{U_\text{ref}}{2^n}\qquad\text{\q{EP}}
+\end{equation}
+\begin{center}
+\begin{tabular}{rrr}
+\toprule
+Bit & Stufen & LSB bei \SI{5}{\volt} (nachgerechnet)\\ \midrule
+8 & 256 & \SI{19.53}{\milli\volt}\\
+10 & 1\,024 & \SI{4.88}{\milli\volt}\\
+12 & 4\,096 & \SI{1.22}{\milli\volt}\\
+16 & 65\,536 & \SI{76.3}{\micro\volt}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Quantisierungsfehler}\label{sec:qfehler}
+Systembedingt $\pm\frac12$\,LSB -- nicht vermeidbar. \q{SWISS}\\
+Theoretischer Signal-Rausch-Abstand eines idealen $n$-Bit-ADC \q{LB} (Vertiefung: \q{THIEDE}):
+\begin{equation}\label{f:snr}
+\text{SNR}\approx 6{,}02\cdot n+1{,}76\ \text{dB}
+\end{equation}
+
+\subsection{Auflösung \texorpdfstring{$\neq$}{≠} Genauigkeit}\label{sec:genau}
+\begin{itemize}
+  \item Die Genauigkeit wird „hauptsächlich durch die Auflösung bestimmt, ist aber nicht gleich der Auflösung“ -- Fehler summieren sich. \q{SWISS}
+  \item \textbf{Linearitätsfehler} (nicht abgleichbar; differentielle/integrale Nichtlinearität) und \textbf{Missing Codes} (Codes, die nie ausgegeben werden, v.\,a.\ bei Flash-Wandlern). \q{SWISS}
+  \item Außerdem: Referenzspannung, Offset- und Verstärkungsfehler. \q{LB}
+\end{itemize}
+
+\subsection{Abtasttheorem und Aliasing}\label{sec:nyquist}
+\folie{11}
+\begin{equation}\label{f:nyquist}
+f_\text{abt} > 2\cdot f_\text{max}\qquad\text{\q{ING}}
+\end{equation}
+\begin{itemize}
+  \item \textbf{Aliasing:} Bei Verletzung entsteht bei der Rekonstruktion ein Signal mit niedrigerer, falscher Frequenz. \q{ING}
+  \item Beispiel: \SI{10}{\kilo\hertz}-Signal mit \SI{15}{\kilo\hertz} abgetastet \q{ING}; Alias-Frequenz (nachgerechnet):
+  \begin{equation}\label{f:alias}
+  f_\text{alias}=f_\text{abt}-f=\SI{15}{\kilo\hertz}-\SI{10}{\kilo\hertz}=\SI{5}{\kilo\hertz}\qquad(\text{für } f_\text{abt}/2<f<f_\text{abt})
+  \end{equation}
+  \item \textbf{Anti-Aliasing-Tiefpass} vor dem ADC entfernt Anteile oberhalb der Nyquist-Frequenz $f_\text{abt}/2$. \q{ING}
+  \item Alltag: Audio-CD \SI{44.1}{\kilo\hertz} $\leftrightarrow$ Hörgrenze $\approx\SI{20}{\kilo\hertz}$; Wagenrad-Effekt im Film. \q{LB}
+\end{itemize}
+
+% =====================================================================
+\section{Wandlerverfahren}\label{sec:verfahren}
+\begin{hinweis}[Einteilung nach \q{SWISS}]
+\textbf{Direkte Verfahren:} Flash/Parallel, Sukzessive Approximation, Zählverfahren\\
+\textbf{Indirekte Verfahren:} Dual-Slope (integrierend)
+\end{hinweis}
+
+\subsection{Flash-/Parallelwandler}\label{sec:flash}
+Ein Komparator je Spannungsstufe, alle vergleichen gleichzeitig $\Rightarrow$ extrem schnell (bis \SI{750}{MS/s} genannt), aber aufwendig. \q{SWISS}
+\begin{equation}\label{f:flash}
+\text{Anzahl Komparatoren}=2^n-1\qquad(8\text{ Bit}\Rightarrow 255)\qquad\text{\q{LB}}
+\end{equation}
+
+\subsection{Sukzessive Approximation (SAR, Wägeverfahren)}\label{sec:sar}
+\folie{12, 13}\\
+Binäre Suche mit Zweierpotenzen-Gewichten; Kompromiss aus Geschwindigkeit und Aufwand. \q{SWISS}
+Ein interner DAC erzeugt die Vergleichsspannung; $n$ Bit $\Rightarrow$ $n$ Vergleichsschritte. \q{LB}
+\begin{beispiel}[4 Bit (nachgerechnet)]
+$U_\text{ref}=\SI{16}{\volt}$ (1\,LSB $=\SI{1}{\volt}$), $U_\text{ein}=\SI{11.3}{\volt}$\\[1mm]
+\begin{tabular}{@{}cllcc@{}}
+\toprule
+Schritt & Test & Vergleich & $\leq\SI{11.3}{\volt}$? & Bit\\ \midrule
+1 & 8 & \SI{8}{\volt} & ja & 1\\
+2 & 4 & \SI{12}{\volt} & nein & 0\\
+3 & 2 & \SI{10}{\volt} & ja & 1\\
+4 & 1 & \SI{11}{\volt} & ja & 1\\
+\bottomrule
+\end{tabular}\\[1mm]
+Ergebnis $1011_2=11$ $\Rightarrow$ \SI{11}{\volt}; Rest \SI{0.3}{\volt} $<$ 1\,LSB.
+\end{beispiel}
+
+\subsection{Zählverfahren}
+Einfach, aber langsam; hohe Auflösungen ($>20$ Bit) möglich. \q{SWISS}
+
+\subsection{Dual-Slope (integrierend)}\label{sec:dualslope}
+\begin{itemize}
+  \item Zeitkonstante $\tau$ und Taktfrequenz „fallen heraus“ $\Rightarrow$ Genauigkeiten bis \SI{0.01}{\percent}; eingesetzt in Digitalvoltmetern. \q{SWISS}
+  \item Unterdrückt Störsignale industrieller Umgebungen automatisch. \q{ICL}
+  \item Prinzip: $U_\text{ein}$ wird eine feste Zeit integriert, dann mit $U_\text{ref}$ zurückintegriert; die Rücklaufzeit ist proportional zu $U_\text{ein}$. Integrationszeit = Vielfaches der Netzperiode (\SI{20}{\milli\second} bei \SI{50}{\hertz}) $\Rightarrow$ Netzbrummen mittelt sich heraus. \q{LB}
+\end{itemize}
+
+\subsection{Sigma-Delta}
+Sehr schnelles 1-Bit-Abtasten (Überabtastung) + digitale Filterung $\Rightarrow$ sehr hohe Auflösung ($\approx$16--24 Bit). Einsatz: Audio, Waagen, Präzisionsmessung. \q{LB}
+
+\subsection{Vergleich}\label{sec:vergleich}
+\folie{12}\\[1mm]
+\begin{tabularx}{\textwidth}{@{}lllXl@{}}
+\toprule
+Verfahren & Tempo & Auflösung (typ.) & Einsatz & Quelle\\ \midrule
+Flash & sehr hoch & $\approx$6--8 Bit & Oszilloskop, Video & \q{SWISS}\,\q{LB}\\
+SAR & mittel & $\approx$8--18 Bit & Mikrocontroller & \q{SWISS}\,\q{LB}\\
+Zählverfahren & langsam & hoch ($>$20 Bit mögl.) & einfache Anwendungen & \q{SWISS}\\
+Dual-Slope & langsam & hoch, störfest & Multimeter & \q{SWISS}\,\q{ICL}\\
+Sigma-Delta & langsam--mittel & $\approx$16--24 Bit & Audio, Waagen & \q{LB}\\
+\bottomrule
+\end{tabularx}\\[1mm]
+{\footnotesize Typische Größenordnungen; variieren je nach Hersteller.}
+
+% =====================================================================
+\section{Praxisbeispiel Arduino Uno (ATmega328P)}\label{sec:arduino}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+Eigenschaft & Wert & Quelle\\ \midrule
+Typ & Sukzessive Approximation (SAR) & \q{SW}\\
+Auflösung & 10 Bit (0 \dots\ 1023) & \q{SW}\\
+Eingänge & 8 gemultiplexte Kanäle ADC0--ADC7 (ADC6/7 nur bei SMD-Gehäusen) & \q{SW}\\
+ADC-Takt (volle Auflösung) & \SIrange{50}{200}{\kilo\hertz} & \q{SW}\\
+Typisch bei \SI{16}{\mega\hertz} & Vorteiler 128 $\Rightarrow$ \SI{125}{\kilo\hertz} & \q{SW}\\
+Wandlungsdauer & 13 ADC-Takte ($\approx\SI{104}{\micro\second}$); erste Wandlung 25 Takte & \q{SW}\\
+Abtastrate & $\approx$\,9,6\,kSPS & \q{SW}\\
+Referenz & AVcc (typ.\ \SI{5}{\volt}), intern \SI{1.1}{\volt}, extern über AREF & \q{SW}\\
+\bottomrule
+\end{tabularx}
+\begin{equation}\label{f:code}
+\text{Code}=\left\lfloor\frac{U_\text{ein}\cdot 2^n}{U_\text{ref}}\right\rfloor
+\qquad\qquad U=\frac{\text{Code}\cdot U_\text{ref}}{2^n}
+\end{equation}
+Konvention des Microchip-Datenblatts \q{MCHP}\,\q{LB} (hier nicht erneut geprüft); viele Tutorials rechnen mit 1023 statt 1024 \q{SW} -- Unterschied $<\SI{0.1}{\percent}$.\\
+Beispiele (nachgerechnet): \SI{2.5}{\volt} $\to$ 512 \quad\textbar\quad Code 300 $\to$ \SI{1.46}{\volt} \quad\textbar\quad \SI{1}{\volt} $\to$ 204.
+
+% =====================================================================
+\section{Digitalmultimeter (DMM)}\label{sec:dmm}
+
+\subsection{Aufbau}
+\folie{14}\\[1mm]
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[b/.style={draw=akzent,thick,rounded corners,align=center,font=\small,
+    minimum height=10mm,minimum width=22mm}]
+  \node[b] (v) at (0,0.8) {V/$\Omega$-Buchse};
+  \node[b,right=4mm of v] (t) {Spannungsteiler\\(Bereichswahl)};
+  \node[b] (a) at (0,-0.8) {mA/A-Buchse};
+  \node[b,right=4mm of a] (f) {Sicherung};
+  \node[b,right=4mm of f] (s) {Shunt};
+  \node[b,right=10mm of s,yshift=8mm] (g) {ggf. Gleich-\\richter / TRMS};
+  \node[b,fill=akzent!15,right=4mm of g] (adc) {ADC\\(oft integrierend)};
+  \node[b,right=4mm of adc] (d) {Display};
+  \draw[-{Stealth}] (v)--(t); \draw[-{Stealth}] (a)--(f); \draw[-{Stealth}] (f)--(s);
+  \draw[-{Stealth}] (t) -| ([xshift=-4mm]g.west) -- (g);
+  \draw[-{Stealth}] (s) -| ([xshift=-4mm]g.west);
+  \draw[-{Stealth}] (g)--(adc); \draw[-{Stealth}] (adc)--(d);
+\end{tikzpicture}}
+\end{center}
+{\footnotesize\q{LB}\,\q{FLUKE}}
+
+\subsection{Stellen und Counts}\label{sec:counts}
+\begin{itemize}
+  \item \textbf{3½ Stellen:} drei volle Ziffern + halbe Stelle $\Rightarrow$ max.\ Anzeige 1\,999; \textbf{4½ Stellen:} 19\,999. \q{FLUKE}
+  \item Moderne 3½-stellige Geräte: erweiterte Anzeigeumfänge 3\,200, 4\,000 oder 6\,000. \q{FLUKE}
+  \item Beispiel (nachgerechnet): 6\,000 Counts im \SI{6}{\volt}-Bereich $\Rightarrow$ Auflösung \SI{1}{\milli\volt}.
+\end{itemize}
+
+\subsection{Genauigkeitsangabe}\label{sec:genauigkeit}
+\begin{equation}\label{f:dmm}
+\text{Toleranz}=\pm\left(p\,\%\cdot\text{Anzeige}+d\cdot\text{Digit}\right)\qquad\text{\q{FLUKE}}
+\end{equation}
+\begin{beispiel}[\q{FLUKE}]
+$\pm$(1\,\% v.\,Mw.\ + 2 Digits) bei Anzeige \SI{100.0}{\volt}: $\pm(\SI{1.0}{\volt}+\SI{0.2}{\volt})$ $\Rightarrow$ wahrer Wert \SIrange{98.8}{101.2}{\volt}.
+\end{beispiel}
+Typische Grundgenauigkeit: $\pm$(0,7\,\% + 1 Digit) bis $\pm$(0,1\,\% + 1 Digit). \q{FLUKE}
+
+\subsection{TRMS vs.\ Mittelwert}\label{sec:trms}
+\begin{itemize}
+  \item \textbf{Echteffektiv (TRMS):} misst Sinus und Nicht-Sinus korrekt (bis zum angegebenen Crestfaktor). \q{FLUKE}
+  \item \textbf{Mittelwertbildend:} korrekt nur bei reinem Sinus; bei verzerrten Signalen oft deutlich zu niedrig. \q{FLUKE}
+\end{itemize}
+
+\subsection{Sicherungen}
+\begin{itemize}
+  \item Ohne Sicherung in den Stromeingängen nicht in Leistungskreisen über \SI{230}{\volt} AC verwenden; Hochenergie-Sicherungen, Nennspannung größer als maximal erwartete Spannung. \q{FLUKE}
+  \item Für CAT III/IV: Hochleistungssicherungen mit aufgedruckten Daten (z.\,B.\ \SI{1000}{\volt}/\SI{30}{\kilo\ampere}) und Prüfzeichen. \q{BGHM}
+\end{itemize}
+
+\subsection{ICL7106 -- der Klassiker}
+3½-stelliger Dual-Slope-ADC, steuert ein LCD direkt an; Vollausschlag \SI{2.000}{\volt} oder \SI{200.0}{\milli\volt} (2\,000 Counts); Rollover-Fehler $<$ 1 Count, Nullpunktdrift $<\SI{1}{\micro\volt/\celsius}$; Einsatz für Spannung, Widerstand, Temperatur, Strom. \q{ICL}
+
+\subsection{Weitere Praxisdetails}
+Widerstandsmessung = Konstantstrom + Spannungsmessung $\Rightarrow$ nur spannungsfrei messen. „Geisterspannungen“ durch hohe Eingangsimpedanz $\Rightarrow$ LoZ-Modus. \q{LB}
+
+% =====================================================================
+\section{Sicherheit und Messkategorien}\label{sec:sicherheit}
+\folie{8}
+
+\subsection{Messkategorien (DIN EN 61010)}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+Kat. & Anwendungsbereich & Kennwerte \q{BGHM}\\ \midrule
+CAT I / 0 & ohne direkte Netzverbindung (z.\,B.\ Batterie) \q{BGHM}\,\q{GM}\,\q{WIKI} & --\\
+CAT II & Geräte für den Netzbetrieb (Haushaltsgeräte, Werkzeuge) \q{BGHM}\,\q{GM} & $\leq$\SI{20}{\ampere}, $\leq$\SI{2}{\kilo\ampere} Kurzschl.\\
+CAT III & Gebäudeinstallation: Verteiler, Leistungsschalter, Verkabelung \q{BGHM}\,\q{GM} & $\leq$\SI{60}{\ampere}, $\leq$\SI{10}{\kilo\ampere} Kurzschl.\\
+CAT IV & Anschlussstelle der Niederspannungsinstallation: Zähler, primäre Überstromschutzeinrichtungen \q{BGHM}\,\q{GM} & $\leq$\SI{50}{\kilo\ampere} Kurzschl.\\
+\bottomrule
+\end{tabularx}
+\begin{itemize}
+  \item Zusätzliche Stufung nach Spannung (\SI{300}{\volt}/\SI{600}{\volt}/\SI{1000}{\volt}); CAT IV \SI{600}{\volt} kann bei \SI{1000}{\volt} nur CAT III sein. Heute geregelt in IEC 61010-2-030. \q{WIKI}
+  \item Messleitungen nach DIN EN 61010-031, gekennzeichnet mit Kategorie, Bemessungsspannung und zulässigem Strom. \q{BGHM}
+  \item Gefährdungen bei ungeeigneten Geräten: elektrischer Schlag, Störlichtbogen, Brand/Explosion. \q{BGHM}
+\end{itemize}
+
+\subsection{Typische Bedienfehler}
+Spannung messen im Strommodus (Kurzschluss über Shunt); Ersatzsicherung mit zu geringem Schaltvermögen; die niedrigste Einstufung von Gerät/Leitung/Zubehör gilt für die gesamte Anordnung. \q{LB}
+
+\subsection{Organisatorisches}
+DGUV Vorschrift 3: Arbeiten an elektrischen Anlagen durch Elektrofachkräfte bzw.\ elektrotechnisch unterwiesene Personen unter Leitung/Aufsicht einer Elektrofachkraft; betriebliche Regelungen beachten. \q{LB}
+
+% =====================================================================
+\section{Formelindex}\label{sec:formeln}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+Gl. & Größe & Abschnitt\\ \midrule
+(\ref{f:teiler}) & Belasteter Spannungsteiler, Parallelschaltung & \ref{sec:belastung}\\
+(\ref{f:n}) & Erweiterungsfaktor $n$ & \ref{sec:vorwiderstand}\\
+(\ref{f:rv}) & Vorwiderstand $R_V=(n-1)R_i$ & \ref{sec:vorwiderstand}\\
+(\ref{f:rn}) & Shunt $R_N=R_i/(n-1)$ & \ref{sec:nebenwiderstand}\\
+(\ref{f:shuntI}) & Strom aus Shunt-Spannung & \ref{sec:shunt}\\
+(\ref{f:fehler}) & Absoluter / relativer Fehler & \ref{sec:fehler}\\
+(\ref{f:lsb}) & Stufenzahl, LSB & \ref{sec:lsb}\\
+(\ref{f:snr}) & SNR idealer ADC & \ref{sec:qfehler}\\
+(\ref{f:nyquist}) & Abtasttheorem & \ref{sec:nyquist}\\
+(\ref{f:alias}) & Alias-Frequenz & \ref{sec:nyquist}\\
+(\ref{f:flash}) & Komparatoren Flash-ADC & \ref{sec:flash}\\
+(\ref{f:code}) & Code $\leftrightarrow$ Spannung & \ref{sec:arduino}\\
+(\ref{f:dmm}) & DMM-Toleranz & \ref{sec:genauigkeit}\\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section{Glossar}\label{sec:glossar}
+\begin{description}[style=nextline,leftmargin=0pt,itemsep=2pt]
+  \item[ADC / ADU] Analog-Digital-Wandler. $\to$ \ref{sec:adc}
+  \item[Aliasing] Falsche, niedrigere Frequenz durch zu langsames Abtasten. $\to$ \ref{sec:nyquist}
+  \item[Anti-Aliasing-Filter] Tiefpass vor dem ADC, entfernt Anteile $>f_\text{abt}/2$. $\to$ \ref{sec:nyquist}
+  \item[Belastungsfehler] Verfälschung durch den endlichen Innenwiderstand des Voltmeters. $\to$ \ref{sec:belastung}
+  \item[Bürdenspannung] Spannungsabfall am Amperemeter. $\to$ \ref{sec:buerde}
+  \item[CAT I--IV] Messkategorien nach DIN EN 61010. $\to$ \ref{sec:sicherheit}
+  \item[Counts] Maximaler Anzeigeumfang eines DMM (z.\,B.\ 1\,999, 6\,000). $\to$ \ref{sec:counts}
+  \item[Crestfaktor] Verhältnis Scheitelwert zu Effektivwert; begrenzt die TRMS-Genauigkeit. $\to$ \ref{sec:trms}
+  \item[DAC] Digital-Analog-Wandler; steckt intern im SAR-ADC. $\to$ \ref{sec:sar}
+  \item[Digit] Einheit der letzten Anzeigestelle. $\to$ \ref{sec:genauigkeit}
+  \item[Dual-Slope] Integrierendes ADC-Verfahren, genau und störfest. $\to$ \ref{sec:dualslope}
+  \item[Flash-Wandler] Paralleler ADC, ein Komparator je Stufe. $\to$ \ref{sec:flash}
+  \item[Güteklasse] Fehlerangabe analoger Instrumente in \% vom Endwert. $\to$ \ref{sec:fehler}
+  \item[LSB / MSB] Least / Most Significant Bit; LSB = kleinste Stufe. $\to$ \ref{sec:lsb}
+  \item[Missing Codes] Codes, die ein ADC nie ausgibt. $\to$ \ref{sec:genau}
+  \item[Nyquist-Frequenz] Halbe Abtastfrequenz. $\to$ \ref{sec:nyquist}
+  \item[Quantisierung] Zuordnung zu einer endlichen Zahl von Stufen. $\to$ \ref{sec:schritte}
+  \item[Sample \& Hold] Halteglied, friert den Abtastwert ein. $\to$ \ref{sec:schritte}
+  \item[SAR] Successive Approximation Register (Wägeverfahren). $\to$ \ref{sec:sar}
+  \item[Shunt] Niederohmiger Messwiderstand für Strommessung. $\to$ \ref{sec:shunt}
+  \item[Sigma-Delta] Überabtastender 1-Bit-ADC mit Digitalfilter. $\to$ \ref{sec:verfahren}
+  \item[TRMS] True RMS, Echt-Effektivwertmessung. $\to$ \ref{sec:trms}
+  \item[Vorwiderstand] Reihenwiderstand zur Voltmeter-Bereichserweiterung. $\to$ \ref{sec:vorwiderstand}
+\end{description}
+
+% =====================================================================
+\section{Quellenschlüssel}\label{sec:quellen}
+Alle Online-Quellen abgerufen am 01.10.2026. \small
+\begin{description}[style=nextline,leftmargin=0pt,itemsep=3pt]
+  \item[\qziel{SWISS}] Lattmann, M.: \emph{Digitaltechnik Kap.\ 10 -- Analog-Digital-Wandler} (SwissEduc).\\
+    \url{https://www.swisseduc.ch/informatik/hardware/analog_digital_wandler/docs/script.pdf}
+  \item[\qziel{EP}] ElektronikPraxis: \emph{ADC und DAC -- das müssen Sie wissen}.\\
+    \url{https://www.elektronikpraxis.de/adc-und-dac-das-muessen-sie-wissen-a-6a0f66b98d47358230bad75369307944/}
+  \item[\qziel{ING}] ingHUB: \emph{Messtechnik -- Abtasttheorem \& Aliasing}.\\
+    \url{https://inghub.de/lessons/messtechnik/aliasing.html}
+  \item[\qziel{ICL}] Analog Devices/Intersil: \emph{ICL7106/ICL7107 -- 3½ Digit A/D Converters} (Datenblatt).\\
+    \url{https://www.analog.com/media/en/technical-documentation/data-sheets/icl7106-icl7107.pdf}
+  \item[\qziel{SW}] SiliconWit: \emph{ADC and Analog Signal Acquisition (ATmega328P)}.\\
+    \url{https://siliconwit.com/education/embedded-programming-atmega328p/adc-analog-signal-acquisition/}
+  \item[\qziel{MCHP}] Microchip: \emph{ATmega328P -- Datenblatt} (nicht im Detail ausgewertet).\\
+    \url{https://www.microchip.com/en-us/product/atmega328p}
+  \item[\qziel{ET}] Elektroniktutor: \emph{Spannungs- und Strommessung}.\\
+    \url{https://www.elektroniktutor.de/elektrophysik/ui_mess.html}
+  \item[\qziel{EL}] Elektronik-Labor/ELEXS: \emph{Messbereichserweiterung beim Voltmeter}.\\
+    \url{https://www.elektronik-labor.de/elexs/messen1.html}
+  \item[\qziel{FLUKE}] Fluke: \emph{ABC der Digitalmultimeter} (dt.\ Anwendungsbericht).\\
+    \url{https://www.calplus.de/fileuploader/download/download/?d=0&file=custom%2Fupload%2Ffluke-abc-der-dmms-de-cp.pdf}
+  \item[\qziel{BGHM}] BGHM: \emph{Hilfsmittel für die Praxis -- Auswahl sicherer handgehaltener Multimeter}.\\
+    \url{https://www.bghm.de/fileadmin/user_upload/Arbeitsschuetzer/Fachthemen/Elektrotechnik/Auswahl_geeigneter_Handmultimeter.pdf}
+  \item[\qziel{GM}] Gossen Metrawatt: \emph{Measuring categories per IEC 61010-1}.\\
+    \url{https://www.gossenmetrawatt.de/en/knowledge/measuring-and-test-technology/measuring-categories-per-iec-61010-1/}
+  \item[\qziel{WIKI}] Wikipedia: \emph{Messkategorie}. \url{https://de.wikipedia.org/wiki/Messkategorie}
+  \item[\qziel{THIEDE}] Thiede, A.: \emph{Elektronik für den Maschinenbau}, Kap.\ 5 (Uni Paderborn; Vertiefung, nicht im Detail ausgewertet).\\
+    \url{https://groups.uni-paderborn.de/hfe/lehre/Script_elt_5.pdf}
+  \item[\qziel{LB}] Allgemeines Lehrbuchwissen (z.\,B.\ \emph{Fachkunde Elektrotechnik}, Europa-Lehrmittel) -- nicht aus den obigen Quellen belegt.
+\end{description}
+
+\end{document}
