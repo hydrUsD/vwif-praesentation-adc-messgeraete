@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Messwert-Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+[hidden]{display:none!important}
+/* Layout: ein schmales Messgeräte-Panel; oben Moduswahl (Drehschalter-Metapher), darunter die Arbeitsfläche; Zähler im LCD-Stil */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --panel-2:#f5f7f9; --fg:#18212b; --muted:#5b6876; --line:#d3dae2;
+  --accent:#b86a00; --accent-ink:#ffffff; --accent-soft:#fbecd6;
+  --lcd:#d9e3c8; --lcd-ink:#1f2a12;
+  --ok:#1d7f4e; --ok-soft:#dcf1e5; --warn:#a86400; --warn-soft:#fbeed8; --bad:#b4302a; --bad-soft:#f7dedc;
+  --c-mess:#2a6fb0; --c-sich:#b4302a; --c-adc:#6b4fbf; --c-dmm:#1d7f4e;
+  --font-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --font-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"Consolas",monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161b; --panel:#1b2129; --panel-2:#222a33; --fg:#e4e9ee; --muted:#9aa7b4; --line:#323c47;
+  --accent:#f0a33a; --accent-ink:#1a1206; --accent-soft:#3a2a12;
+  --lcd:#2b3420; --lcd-ink:#cfe6a6;
+  --ok:#4cc38a; --ok-soft:#173527; --warn:#f0a33a; --warn-soft:#3a2a12; --bad:#ef6a62; --bad-soft:#3d1c1a;
+  --c-mess:#6aa8e6; --c-sich:#ef6a62; --c-adc:#a993f0; --c-dmm:#4cc38a;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161b; --panel:#1b2129; --panel-2:#222a33; --fg:#e4e9ee; --muted:#9aa7b4; --line:#323c47;
+  --accent:#f0a33a; --accent-ink:#1a1206; --accent-soft:#3a2a12;
+  --lcd:#2b3420; --lcd-ink:#cfe6a6;
+  --ok:#4cc38a; --ok-soft:#173527; --warn:#f0a33a; --warn-soft:#3a2a12; --bad:#ef6a62; --bad-soft:#3d1c1a;
+  --c-mess:#6aa8e6; --c-sich:#ef6a62; --c-adc:#a993f0; --c-dmm:#4cc38a;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.5}
+.wrap{max-width:780px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--font-display);font-stretch:112%;font-weight:800;font-size:clamp(1.6rem,4.5vw,2.2rem);line-height:1.05;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.95rem}
+.lcd{font-family:var(--font-mono);background:var(--lcd);color:var(--lcd-ink);border-radius:6px;padding:6px 12px;font-size:1.05rem;font-variant-numeric:tabular-nums;letter-spacing:.04em;border:1px solid var(--line);white-space:nowrap}
+.lcd small{font-size:.7rem;opacity:.8;letter-spacing:.08em;text-transform:uppercase;margin-right:6px}
+/* Modus-Wahl */
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px}
+.modes button{font:600 .95rem var(--font-body);border:0;background:transparent;color:var(--muted);padding:9px 8px;border-radius:999px;cursor:pointer}
+.modes button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.modes button:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 .85rem var(--font-body);border:1px solid var(--line);background:var(--panel-2);color:var(--fg);border-radius:999px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--dc,var(--muted))}
+.chip[aria-pressed="true"]{border-color:var(--dc,var(--accent));background:var(--accent-soft)}
+.progress{display:flex;align-items:center;gap:10px}
+.bar{flex:1;height:6px;background:var(--panel-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+.count{font-family:var(--font-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+/* Karte */
+.card-wrap{perspective:1200px;cursor:pointer;min-height:260px}
+.card-inner{position:relative;width:100%;min-height:260px;transition:transform .5s;transform-style:preserve-3d}
+.card-wrap.flipped .card-inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.back{transform:rotateY(180deg)}
+.tag{font:600 .72rem var(--font-body);text-transform:uppercase;letter-spacing:.09em;color:var(--dc)}
+.q{font-family:var(--font-display);font-stretch:112%;font-weight:600;font-size:clamp(1.15rem,3.2vw,1.45rem);line-height:1.25;text-wrap:balance;margin:auto 0}
+.a{font-size:1.05rem}
+.a strong{color:var(--accent)}
+.hint{color:var(--muted);font-size:.8rem;margin-top:auto}
+.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.btn{font:600 .95rem var(--font-body);border:1px solid var(--line);background:var(--panel-2);color:var(--fg);border-radius:8px;padding:9px 14px;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--fg)}
+.btn.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--fg)}
+.btn.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--fg)}
+.kb{color:var(--muted);font-size:.8rem;text-align:center}
+kbd{font-family:var(--font-mono);font-size:.75rem;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--panel-2)}
+.done{text-align:center;padding:24px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.done h2{font-family:var(--font-display);font-stretch:112%;margin:0}
+/* Rechnen */
+.task-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.task-id{font-family:var(--font-mono);font-weight:600;color:var(--accent)}
+.task-q{font-size:1.08rem;max-width:65ch}
+.answer-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.answer-row input{font:600 1.05rem var(--font-mono);width:12ch;max-width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);color:var(--fg);font-variant-numeric:tabular-nums}
+.unit{font-family:var(--font-mono);color:var(--muted)}
+.fb{border-radius:8px;padding:12px 14px;font-size:.98rem}
+.fb.right{background:var(--ok-soft);border:1px solid var(--ok)}
+.fb.wrong{background:var(--bad-soft);border:1px solid var(--bad)}
+.fb.info{background:var(--panel-2);border:1px solid var(--line)}
+.fb b.lbl{display:block;margin-bottom:4px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;font:400 1rem var(--font-body);border:1px solid var(--line);background:var(--panel-2);color:var(--fg);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+/* Rückfragen */
+.timer{font-family:var(--font-mono);font-size:2rem;font-variant-numeric:tabular-nums;background:var(--lcd);color:var(--lcd-ink);border-radius:8px;padding:4px 14px;border:1px solid var(--line)}
+.timer.low{color:var(--bad)}
+.stats{display:flex;gap:10px;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+.stats span b{font-family:var(--font-mono);color:var(--fg)}
+.toggle{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
+.foot{color:var(--muted);font-size:.8rem;text-align:center}
+@media (prefers-reduced-motion:reduce){.card-inner,.bar i{transition:none}}
+@media (max-width:480px){.modes button{font-size:.85rem;padding:8px 4px}.face{padding:16px}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Messwert-Trainer</h1>
+      <p class="sub">Vorbereitung auf den Vortrag „Vom Messwert zur Zahl“ · Voltmeter, Amperemeter &amp; ADC</p>
+    </div>
+    <div class="lcd" id="lcd" aria-live="polite"><small>Rechnen</small><span id="lcdVal">0 / 0</span></div>
+  </header>
+
+  <nav class="modes" role="tablist" aria-label="Lernmodus">
+    <button role="tab" id="tab-cards" aria-selected="true" data-mode="cards">Karteikarten</button>
+    <button role="tab" id="tab-calc" aria-selected="false" data-mode="calc">Rechnen &amp; Fehler</button>
+    <button role="tab" id="tab-qa" aria-selected="false" data-mode="qa">Rückfragen</button>
+  </nav>
+
+  <!-- KARTEIKARTEN -->
+  <section class="panel" id="mode-cards" aria-labelledby="tab-cards">
+    <div class="chips" id="cardFilters"></div>
+    <div class="progress"><div class="bar"><i id="cardBar"></i></div><span class="count" id="cardCount">0 / 0</span></div>
+    <div class="card-wrap" id="cardWrap" tabindex="0" aria-label="Karteikarte, zum Umdrehen klicken oder Leertaste">
+      <div class="card-inner">
+        <div class="face front"><span class="tag" id="cFrontTag"></span><div class="q" id="cQ"></div><span class="hint">Antwort laut sagen – dann umdrehen (Leertaste)</span></div>
+        <div class="face back"><span class="tag" id="cBackTag"></span><div class="a" id="cA"></div></div>
+      </div>
+    </div>
+    <div class="done" id="cardDone" hidden>
+      <h2>Alle durch</h2>
+      <p id="cardDoneText"></p>
+      <div class="controls"><button class="btn primary" id="cardRetryWrong">Nur „Nochmal“-Karten</button><button class="btn" id="cardRestart2">Alle neu starten</button></div>
+    </div>
+    <div class="controls" id="cardControls">
+      <button class="btn" id="cardPrev" aria-label="Vorherige Karte">←</button>
+      <button class="btn bad" id="cardAgain">Nochmal</button>
+      <button class="btn ok" id="cardKnew">Gewusst</button>
+      <button class="btn" id="cardNext" aria-label="Nächste Karte">→</button>
+      <button class="btn" id="cardShuffle">Mischen</button>
+      <button class="btn" id="cardRestart">Neustart</button>
+      <button class="btn" id="cardSaved" hidden title="Karten, die du in diesem Browser mit „Nochmal“ markiert hast">Gemerkte „Nochmal“</button>
+    </div>
+    <p class="kb"><kbd>Leertaste</kbd> umdrehen · <kbd>←</kbd> <kbd>→</kbd> blättern · <kbd>G</kbd> gewusst · <kbd>N</kbd> nochmal</p>
+  </section>
+
+  <!-- RECHNEN -->
+  <section class="panel" id="mode-calc" aria-labelledby="tab-calc" hidden>
+    <div class="chips" id="calcFilters"></div>
+    <div class="progress"><div class="bar"><i id="calcBar"></i></div><span class="count" id="calcCount">0 / 0</span></div>
+    <div id="calcBody"></div>
+    <div class="controls">
+      <button class="btn" id="calcPrev">← Zurück</button>
+      <button class="btn" id="calcShuffle">Mischen</button>
+      <button class="btn" id="calcRestart">Neustart</button>
+      <button class="btn primary" id="calcNext">Weiter →</button>
+    </div>
+    <p class="kb">Komma oder Punkt als Dezimaltrenner · <kbd>Enter</kbd> prüfen</p>
+  </section>
+
+  <!-- RÜCKFRAGEN -->
+  <section class="panel" id="mode-qa" aria-labelledby="tab-qa" hidden>
+    <div class="task-head">
+      <label class="toggle"><input type="checkbox" id="qaStarOnly"> nur ⭐-Fragen (sehr wahrscheinlich)</label>
+      <div class="stats"><span>sicher <b id="sOk">0</b></span><span>wackelig <b id="sWarn">0</b></span><span>falsch <b id="sBad">0</b></span><span>übrig <b id="sLeft">0</b></span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div class="timer" id="qaTimer" aria-live="off">0:30</div>
+      <div style="flex:1;min-width:0"><span class="tag" id="qaTag" style="--dc:var(--accent)"></span><div class="q" id="qaQ" style="margin:4px 0"></div></div>
+    </div>
+    <p class="hint" style="margin:0">Frage kurz wiederholen → 1-Satz-Antwort → 1 Satz Begründung. 30 Sekunden, laut.</p>
+    <div class="fb info" id="qaA" hidden></div>
+    <div class="controls">
+      <button class="btn" id="qaStart">Timer starten</button>
+      <button class="btn primary" id="qaShow">Musterantwort zeigen</button>
+    </div>
+    <div class="controls" id="qaRate" hidden>
+      <button class="btn ok" data-r="ok">Sicher</button>
+      <button class="btn warn" data-r="warn">Wackelig</button>
+      <button class="btn bad" data-r="bad">Falsch</button>
+    </div>
+    <div class="done" id="qaDone" hidden><h2>Fragerunde beendet</h2><p id="qaDoneText"></p><div class="controls"><button class="btn primary" id="qaRetry">Wackelige &amp; falsche wiederholen</button><button class="btn" id="qaRestart">Alle neu mischen</button></div></div>
+  </section>
+
+  <p class="foot">Zahlen aus der Präsentation und den Übungen sind nachgerechnet. Antworten mit [LB] stammen aus allgemeinem Lehrbuchwissen.</p>
+</div>
+
+<script>
+const CATS={
+  mess:{label:"Voltmeter & Amperemeter",color:"var(--c-mess)"},
+  sich:{label:"Sicherheit",color:"var(--c-sich)"},
+  adc:{label:"ADC",color:"var(--c-adc)"},
+  dmm:{label:"Verfahren & Multimeter",color:"var(--c-dmm)"}
+};
+const cards=[
+ {cat:"mess",q:"Wie wird ein Voltmeter angeschlossen, und wie soll sein Innenwiderstand sein?",a:"<strong>Parallel</strong> zum Bauteil.<br>Innenwiderstand möglichst <strong>groß</strong> (ideal ∞)."},
+ {cat:"mess",q:"Wie wird ein Amperemeter angeschlossen, und wie soll sein Innenwiderstand sein?",a:"<strong>In Reihe</strong> (Kreis auftrennen).<br>Innenwiderstand möglichst <strong>klein</strong> (ideal 0)."},
+ {cat:"mess",q:"Typischer Eingangswiderstand eines Digitalmultimeters im Spannungsbereich?",a:"<strong>≈ 10 MΩ</strong>"},
+ {cat:"mess",q:"Was ist der Belastungsfehler?",a:"Der Innenwiderstand des Voltmeters liegt <strong>parallel</strong> zum Messobjekt und verkleinert den wirksamen Widerstand → die Anzeige ist <strong>zu klein</strong>."},
+ {cat:"mess",q:"Spannungsteiler 2 × 1 MΩ an 10 V – was zeigt ein DMM (10 MΩ) über R2 an?",a:"<strong>4,76 V</strong> statt 5,00 V (−4,8 %)<br>weil 1 MΩ ∥ 10 MΩ = 0,909 MΩ"},
+ {cat:"mess",q:"Gleicher Teiler, aber analoges Zeigerinstrument (20 kΩ/V, 10-V-Bereich) – Anzeige?",a:"<strong>1,43 V</strong> (Rᵢ = 200 kΩ, −71 %)"},
+ {cat:"mess",q:"Wie misst ein Digitalmultimeter intern einen Strom?",a:"Über einen <strong>Shunt</strong>: U = I · R_Shunt wird als Spannung gemessen → I = U / R.<br>Auch ein Amperemeter ist innen ein Voltmeter."},
+ {cat:"mess",q:"Was ist die Bürdenspannung?",a:"Der <strong>Spannungsabfall am Amperemeter</strong> (Shunt + Sicherung + Leitungen). Er fehlt der eigentlichen Schaltung."},
+ {cat:"mess",q:"5 V an 25 Ω, Amperemeter mit 1 Ω Innenwiderstand – welcher Strom wird gemessen?",a:"<strong>192 mA</strong> statt 200 mA (−3,8 %)"},
+ {cat:"mess",q:"Formel für den Vorwiderstand (Voltmeter-Bereichserweiterung)?",a:"<strong>R_V = (n − 1) · Rᵢ</strong><br>in Reihe zum Messwerk"},
+ {cat:"mess",q:"Formel für den Shunt (Amperemeter-Bereichserweiterung)?",a:"<strong>R_N = Rᵢ / (n − 1)</strong><br>parallel zum Messwerk"},
+ {cat:"mess",q:"Was ist der Erweiterungsfaktor n?",a:"<strong>n = neuer Messbereich / alter Messbereich</strong>"},
+ {cat:"mess",q:"Messwerk 100 µA / 1 kΩ soll 10 V messen – Vorwiderstand?",a:"n = 100 → <strong>R_V = 99 kΩ</strong>"},
+ {cat:"mess",q:"Wann misst man spannungsrichtig?",a:"Bei <strong>kleinen Widerständen</strong>. Voltmeter direkt am Bauteil: U korrekt, I etwas zu groß."},
+ {cat:"mess",q:"Wann misst man stromrichtig?",a:"Bei <strong>großen Widerständen</strong>. Amperemeter direkt am Bauteil: I korrekt, U etwas zu groß."},
+ {cat:"sich",q:"Was passiert, wenn das Amperemeter parallel an eine Spannungsquelle kommt?",a:"<strong>Kurzschluss</strong> über den fast 0 Ω kleinen Shunt → Sicherung löst aus, sonst Lichtbogen oder Zerstörung."},
+ {cat:"sich",q:"Was passiert, wenn das Voltmeter in Reihe geschaltet wird?",a:"Ungefährlich, aber es fließt kaum Strom → die Schaltung funktioniert nicht, Anzeige ≈ Quellspannung."},
+ {cat:"sich",q:"Welche drei Dinge prüfst du vor jeder Messung?",a:"<strong>Buchse – Drehschalter – Messbereich</strong>"},
+ {cat:"sich",q:"Wo gilt CAT IV?",a:"Ursprung der Installation: <strong>Hausanschluss, Zähler</strong>"},
+ {cat:"sich",q:"Wo gilt CAT III?",a:"Gebäudeinstallation: <strong>Verteiler, Leistungsschalter</strong>, fest angeschlossene Verbraucher"},
+ {cat:"sich",q:"Wo gilt CAT II?",a:"<strong>Geräte mit Netzstecker</strong> (Haushaltsgeräte, Werkzeuge)"},
+ {cat:"sich",q:"Wo gilt CAT I bzw. „CAT 0“?",a:"Stromkreise <strong>ohne direkte Netzverbindung</strong> (Batterie, Elektronik)"},
+ {cat:"sich",q:"Welche Norm regelt die Messkategorien?",a:"<strong>DIN EN 61010</strong> (Kategorien heute in IEC 61010-2-030)"},
+ {cat:"sich",q:"Welche Einstufung gilt, wenn Messgerät und Messleitungen unterschiedliche CAT haben?",a:"Die <strong>niedrigste</strong> Einstufung von Gerät, Leitungen und Zubehör gilt für die ganze Messanordnung."},
+ {cat:"adc",q:"Welche drei Schritte führt ein ADC aus?",a:"<strong>Abtasten – Quantisieren – Codieren</strong>"},
+ {cat:"adc",q:"Was macht Sample & Hold?",a:"Ein Kondensator <strong>hält den abgetasteten Wert</strong> konstant, während der ADC wandelt."},
+ {cat:"adc",q:"Formel für das LSB?",a:"<strong>U_LSB = U_ref / 2ⁿ</strong>"},
+ {cat:"adc",q:"Wie viele Stufen hat ein 10-Bit-ADC?",a:"2¹⁰ = <strong>1024</strong>"},
+ {cat:"adc",q:"Wie groß ist das LSB eines 10-Bit-ADC bei 5 V Referenz?",a:"<strong>≈ 4,88 mV</strong> (5 V / 1024)"},
+ {cat:"adc",q:"Wie groß ist der Quantisierungsfehler?",a:"<strong>± ½ LSB</strong>, wenn auf die Stufenmitte gerundet wird – systembedingt, nicht vermeidbar.<br>Beim reinen <strong>Abrunden</strong> (Arduino-Rechnung): 0 … 1 LSB."},
+ {cat:"adc",q:"Arduino Uno (10 Bit, 5 V): welcher Code bei 2,5 V?",a:"<strong>512</strong> (genau die Hälfte von 1024)"},
+ {cat:"adc",q:"Arduino Uno: analogRead() liefert 300 – welche Spannung?",a:"300 · 5 V / 1024 ≈ <strong>1,46 V</strong>"},
+ {cat:"adc",q:"Worin unterscheiden sich Auflösung und Genauigkeit?",a:"<strong>Auflösung</strong> = Feinheit der Stufen (1 LSB).<br><strong>Genauigkeit</strong> = Nähe zum wahren Wert, zusätzlich begrenzt durch Referenz-, Offset- und Linearitätsfehler."},
+ {cat:"adc",q:"Wie lautet das Abtasttheorem (Nyquist-Shannon)?",a:"<strong>f_Abtast > 2 · f_max</strong> (mehr als doppelt so schnell)"},
+ {cat:"adc",q:"Was ist Aliasing?",a:"Bei zu langsamer Abtastung erscheint eine <strong>falsche, niedrigere Frequenz</strong> (Wagenrad-Effekt im Film)."},
+ {cat:"adc",q:"10-kHz-Signal mit 15 kHz abgetastet – welche Alias-Frequenz entsteht?",a:"15 − 10 = <strong>5 kHz</strong>"},
+ {cat:"adc",q:"Womit verhindert man Aliasing?",a:"<strong>Anti-Aliasing-Tiefpass</strong> vor dem ADC (entfernt Anteile über f_Abtast / 2)"},
+ {cat:"adc",q:"Warum tastet die Audio-CD mit 44,1 kHz ab?",a:"Hörgrenze ≈ <strong>20 kHz</strong> → mehr als 40 kHz nötig, der Rest ist Reserve fürs Filter."},
+ {cat:"dmm",q:"Flash-Wandler: Prinzip und Einsatz?",a:"Ein <strong>Komparator je Schwelle</strong> (2ⁿ − 1), alle gleichzeitig → sehr schnell, aber grob (≈ 6–8 Bit).<br>Einsatz: <strong>Oszilloskope</strong>, Video"},
+ {cat:"dmm",q:"Wie viele Komparatoren braucht ein 8-Bit-Flash-Wandler?",a:"2⁸ − 1 = <strong>255</strong>"},
+ {cat:"dmm",q:"SAR-Wandler: Prinzip und Einsatz?",a:"<strong>Binäre Suche</strong> Bit für Bit (n Schritte), interner DAC.<br>Einsatz: <strong>Mikrocontroller</strong> (Arduino)"},
+ {cat:"dmm",q:"SAR, 4 Bit, U_ref = 16 V, U_ein = 11,3 V – welches Ergebnis?",a:"<strong>1011₂ = 11</strong> → 11 V (Rest 0,3 V < 1 LSB)"},
+ {cat:"dmm",q:"Dual-Slope-Wandler: Prinzip, Vorteil, Einsatz?",a:"<strong>Integrieren und zurückintegrieren</strong>; RC und Takt kürzen sich heraus, sehr <strong>störfest</strong> (Netzbrummen mittelt sich bei 20 ms heraus).<br>Einsatz: <strong>Multimeter</strong>"},
+ {cat:"dmm",q:"Sigma-Delta-Wandler: Eigenschaft und Einsatz?",a:"Überabtastung + digitale Filter → <strong>sehr hohe Auflösung</strong> (≈ 16–24 Bit).<br>Einsatz: Audio, Waagen"},
+ {cat:"dmm",q:"Was bedeutet „3½ Stellen“?",a:"3 volle Ziffern + halbe Stelle (0 oder 1) → max. Anzeige <strong>1999</strong> („2000 Counts“)"},
+ {cat:"dmm",q:"6000-Count-Multimeter im 6-V-Bereich – welche Auflösung?",a:"<strong>1 mV</strong> (6,000 V)"},
+ {cat:"dmm",q:"±(1 % v. Mw. + 2 Digits) bei Anzeige 100,0 V – wo liegt der wahre Wert?",a:"±(1,0 V + 0,2 V) → <strong>98,8 … 101,2 V</strong>"},
+ {cat:"dmm",q:"Was bedeutet TRMS?",a:"<strong>True RMS</strong>, Echt-Effektivwert – misst auch nicht-sinusförmige Signale korrekt."},
+ {cat:"dmm",q:"Welcher ADC-Chip gilt als Multimeter-Klassiker?",a:"<strong>ICL7106</strong> – 3½-stelliger Dual-Slope-ADC"},
+ {cat:"dmm",q:"Wie lauten die 3 Take-aways der Präsentation?",a:"<ul><li>Voltmeter parallel &amp; hochohmig, Amperemeter in Reihe &amp; niederohmig</li><li>ADC = Abtasten + Quantisieren + Codieren; U_LSB = U_ref/2ⁿ; f_A > 2 f_max</li><li>Im Multimeter: Spannungsmessung + ADC</li></ul>"}
+];
+
+/* Rechen- und Fehleraufgaben – alle Werte mit Python nachgerechnet */
+const tasks=[
+ {id:"P1",cat:"mess",q:"Präsentation (Folie 4): Teiler 2 × 1 MΩ an 10 V, DMM mit 10 MΩ über R2. Welche Spannung zeigt es an?",unit:"V",ans:4.76,tol:0.01,sol:"1 MΩ ∥ 10 MΩ = 0,909 MΩ → U₂ = 10 V · 0,909 / 1,909 ≈ 4,76 V"},
+ {id:"R1",cat:"mess",q:"Teiler R1 = R2 = 100 kΩ an 12 V, gemessen über R2 mit einem DMM (10 MΩ). Anzeige?",unit:"V",ans:5.97,tol:0.01,sol:"100 kΩ ∥ 10 MΩ ≈ 99,01 kΩ → U₂ = 12 · 99,01 / 199,01 ≈ 5,97 V (Fehler ≈ −0,5 %, weil R₂ ≪ Rᵢ)"},
+ {id:"R2",cat:"mess",q:"Last 10 Ω an 3 V, Amperemeter mit Rᵢ = 0,5 Ω. Welcher Strom wird angezeigt?",unit:"mA",ans:285.7,tol:1,sol:"I = 3 V / 10,5 Ω ≈ 285,7 mA (statt 300 mA, −4,8 %)"},
+ {id:"R2b",cat:"mess",q:"Gleiche Schaltung wie R2: Wie groß ist die Bürdenspannung am Amperemeter?",unit:"V",ans:0.143,tol:0.004,sol:"U = I · Rᵢ ≈ 0,2857 A · 0,5 Ω ≈ 0,14 V"},
+ {id:"R3",cat:"mess",q:"Messwerk 50 µA / 2 kΩ soll bis 30 V messen. Wie groß ist der Vorwiderstand?",unit:"kΩ",ans:598,tol:1,sol:"Vollausschlag 50 µA · 2 kΩ = 0,1 V → n = 300 → R_V = 299 · 2 kΩ = 598 kΩ"},
+ {id:"R4",cat:"mess",q:"Gleiches Messwerk (50 µA / 2 kΩ) soll bis 1 mA messen. Wie groß ist der Shunt?",unit:"Ω",ans:105.3,tol:0.5,sol:"n = 1 mA / 50 µA = 20 → R_N = 2000 Ω / 19 ≈ 105,3 Ω. (Typischer Fehler: Rᵢ/n = 100 Ω.)"},
+ {id:"P2",cat:"adc",q:"Präsentation (Folie 10): LSB eines 10-Bit-ADC bei 5 V?",unit:"mV",ans:4.88,tol:0.03,sol:"5 V / 1024 ≈ 4,88 mV"},
+ {id:"R5",cat:"adc",q:"12-Bit-ADC, U_ref = 3,3 V. Wie groß ist das LSB?",unit:"mV",ans:0.806,tol:0.005,sol:"3,3 V / 4096 ≈ 0,806 mV (Quantisierungsfehler ±0,40 mV)"},
+ {id:"R5b",cat:"adc",q:"12-Bit-ADC, U_ref = 3,3 V: Welcher Code entsteht bei 1,65 V?",unit:"",ans:2048,tol:0,sol:"⌊1,65 · 4096 / 3,3⌋ = 2048 – genau die Hälfte"},
+ {id:"R6",cat:"adc",q:"Arduino Uno (10 Bit, 5 V): analogRead() = 820. Welche Spannung liegt an?",unit:"V",ans:4.00,tol:0.01,sol:"820 · 5 V / 1024 ≈ 4,00 V"},
+ {id:"R6b",cat:"adc",q:"Arduino Uno (10 Bit, 5 V): Welchen Wert liefert analogRead() bei 3,3 V? (Code = U · 1024 / U_ref, abgerundet)",unit:"",ans:675,tol:0,sol:"⌊3,3 · 1024 / 5⌋ = ⌊675,8⌋ = 675"},
+ {id:"R7",cat:"adc",q:"12-V-Batterie über Teiler R1 = 15 kΩ (oben), R2 = 10 kΩ (unten) an den Arduino. Welche Spannung sieht der ADC?",unit:"V",ans:4.8,tol:0.01,sol:"12 V · 10 / 25 = 4,8 V (< 5 V, also erlaubt)"},
+ {id:"R7b",cat:"adc",q:"Wie R7: Welchen Code liefert analogRead() bei 4,8 V?",unit:"",ans:983,tol:0,sol:"⌊4,8 · 1024 / 5⌋ = 983 · Rückrechnung: 983 · 5/1024 · 2,5 ≈ 12,0 V"},
+ {id:"R8",cat:"adc",q:"Ein 7-kHz-Ton wird mit 10 kHz abgetastet. Welche Frequenz „hört“ man nach der Rekonstruktion?",unit:"kHz",ans:3,tol:0,sol:"7 kHz > f_A/2 = 5 kHz → Aliasing: 10 − 7 = 3 kHz"},
+ {id:"P3",cat:"adc",q:"Präsentation (Folie 11): 10-kHz-Signal, Abtastung mit 15 kHz. Alias-Frequenz?",unit:"kHz",ans:5,tol:0,sol:"15 − 10 = 5 kHz"},
+ {id:"R9",cat:"dmm",q:"SAR, 4 Bit, U_ref = 16 V (1 LSB = 1 V), U_ein = 6,7 V. Welches Ergebnis (als Dezimalzahl)?",unit:"",ans:6,tol:0,sol:"8 ✗ → 0 · 4 ✓ → 1 · 4+2 = 6 ✓ → 1 · 6+1 = 7 ✗ → 0 → 0110₂ = 6"},
+ {id:"R9b",cat:"dmm",q:"🎓 SAR, 8 Bit, U_ref = 2,56 V (1 LSB = 10 mV), U_ein = 1,003 V. Ergebnis (dezimal)?",unit:"",ans:100,tol:0,sol:"1,28 ✗ · 0,64 ✓ · 0,96 ✓ · 1,12 ✗ · 1,04 ✗ · 1,00 ✓ · 1,02 ✗ · 1,01 ✗ → 01100100₂ = 100"},
+ {id:"R10",cat:"dmm",q:"DMM zeigt im 6-V-Bereich (1 mV Auflösung) 5,000 V; Datenblatt ±(0,5 % v. Mw. + 3 Digits). Untere Grenze des wahren Werts?",unit:"V",ans:4.972,tol:0.0015,sol:"0,025 V + 0,003 V = ±0,028 V → 4,972 … 5,028 V"},
+ {id:"R11",cat:"dmm",q:"4000-Count-Multimeter im 4-V-Bereich. Welche Auflösung?",unit:"mV",ans:1,tol:0,sol:"4,000 V → 1 mV. Bei 4,5 V: manuell im 4-V-Bereich „OL“; mit Autorange schaltet es in den 40-V-Bereich → 4,50 V mit 10 mV Auflösung."},
+ {id:"R12",cat:"dmm",q:"Wie viele Komparatoren braucht ein 6-Bit-Flash-Wandler?",unit:"",ans:63,tol:0,sol:"2⁶ − 1 = 63 (10 Bit wären schon 1023)"},
+ {id:"R13",cat:"adc",q:"🎓 Theoretischer Signal-Rausch-Abstand eines idealen 12-Bit-ADC?",unit:"dB",ans:74,tol:0.2,sol:"6,02 · 12 + 1,76 ≈ 74 dB"},
+ {id:"F1",cat:"sich",type:"mc",q:"Ein Azubi: „Für die Strommessung halte ich das Multimeter einfach parallel an die Lampe.“ Was stimmt?",opts:["Richtig, so misst man den Strom durch die Lampe.","Falsch: Amperemeter in Reihe – parallel entsteht ein Kurzschluss über den Shunt.","Falsch: Man muss nur den Messbereich auf 10 A stellen."],ok:1,sol:"Das Amperemeter ist fast 0 Ω – parallel an die Spannung = Kurzschluss. Immer in Reihe."},
+ {id:"F2",cat:"adc",type:"mc",q:"„Mein 10-Bit-ADC an 5 V hat ein LSB von 4,88 mV – also misst er auf 4,88 mV genau.“ Was ist falsch?",opts:["Nichts, das stimmt.","Auflösung ist nicht gleich Genauigkeit – Referenz-, Offset- und Linearitätsfehler kommen dazu.","Das LSB ist 5 mV, nicht 4,88 mV."],ok:1,sol:"4,88 mV ist nur die Stufenbreite (Auflösung). Bei einer 5-V-Referenz mit ±1 % Toleranz kommen allein schon bis zu 50 mV Fehler dazu."},
+ {id:"F3",cat:"adc",type:"mc",q:"„Für ein 1-kHz-Signal reicht eine Abtastrate von genau 2 kHz.“",opts:["Stimmt – genau das Doppelte reicht.","Falsch – es muss mehr als das Doppelte sein (f_A > 2 f_max).","Falsch – man braucht mindestens 10 kHz."],ok:1,sol:"Bei genau 2 kHz kann man immer die Nulldurchgänge treffen. Das Theorem verlangt „mehr als“."},
+ {id:"F4",cat:"mess",type:"mc",q:"„Für die Voltmeter-Erweiterung rechne ich R_V = Rᵢ / (n − 1).“",opts:["Richtig.","Vertauscht: Das ist die Shunt-Formel; Voltmeter: R_V = (n − 1) · Rᵢ.","Falsch: R_V = n · Rᵢ."],ok:1,sol:"Reihenschaltung → großer Vorwiderstand: R_V = (n − 1) · Rᵢ."},
+ {id:"F5",cat:"dmm",type:"mc",q:"„±(1 % + 2 Digits) heißt 1 % vom Messbereich.“",opts:["Richtig.","Falsch: 1 % vom Messwert plus 2 Einheiten der letzten Stelle.","Falsch: 1 % von der Referenzspannung."],ok:1,sol:"Beim DMM gilt „v. Mw.“ = vom Messwert. „% vom Endwert“ ist die Güteklasse analoger Instrumente."},
+ {id:"F6",cat:"sich",type:"mc",q:"„Mein Multimeter hat CAT II 1000 V, damit darf ich am Zählerplatz messen.“",opts:["Richtig, 1000 V reichen.","Falsch: Am Zählerplatz ist CAT IV nötig.","Richtig, CAT II deckt alle Netzspannungen ab."],ok:1,sol:"Die Kategorie richtet sich nach dem Ort in der Installation; der Zähler ist CAT IV."},
+ {id:"F7",cat:"dmm",type:"mc",q:"„Ein 8-Bit-Flash-Wandler braucht 256 Komparatoren.“",opts:["Richtig, 2⁸ = 256.","Falsch: 2⁸ − 1 = 255 Komparatoren.","Falsch: 8 Komparatoren, einer pro Bit."],ok:1,sol:"Zwischen 256 Stufen liegen 255 Schwellen → 255 Komparatoren."}
+];
+
+/* Rückfragen: ⭐ = sehr wahrscheinlich (aus 02_QA_Vorbereitung), N = neu, [LB] = Lehrbuchwissen */
+const qas=[
+ {star:1,cat:"mess",q:"Was passiert, wenn ich ein Amperemeter parallel anschließe?",a:"<b class='lbl'>Kurzschluss.</b>Das Amperemeter hat fast 0 Ω. Parallel zur Quelle fließt ein sehr großer Strom → die Gerätesicherung löst aus; ohne geeignete Sicherung drohen Zerstörung, Lichtbogen, Verletzung."},
+ {star:1,cat:"mess",q:"Und wenn ich ein Voltmeter in Reihe schalte?",a:"<b class='lbl'>Ungefährlich, aber die Schaltung funktioniert nicht.</b>Mit ≈ 10 MΩ in Reihe fließt kaum Strom; das Voltmeter zeigt ungefähr die Quellspannung, weil fast alles an seinem Innenwiderstand abfällt."},
+ {star:1,cat:"mess",q:"Warum soll ein Voltmeter hochohmig und ein Amperemeter niederohmig sein?",a:"Beide sollen die Schaltung möglichst wenig verändern: Das Voltmeter liegt parallel und soll keinen Strom abzweigen, das Amperemeter liegt in Reihe und soll keine Spannung wegnehmen."},
+ {star:0,cat:"mess",q:"Was ist die Bürdenspannung?",a:"Der Spannungsabfall am Amperemeter (Shunt, Sicherung, Leitungen). Er fehlt der Schaltung und verfälscht vor allem Messungen in Kreisen mit kleiner Spannung."},
+ {star:0,cat:"mess",q:"Wie misst man Strom, ohne den Stromkreis aufzutrennen?",a:"Mit einer Stromzange: bei Wechselstrom nach dem Transformator-/Stromwandlerprinzip, bei Gleichstrom mit Hall-Sensor."},
+ {star:0,cat:"mess",q:"Wie misst ein Multimeter einen Widerstand?",a:"Es schickt einen bekannten Konstantstrom durch das Bauteil und misst die Spannung → R = U / I. Deshalb nur im spannungsfreien Zustand messen."},
+ {star:0,cat:"mess",q:"Wie bekommt ein Messwerk mehrere Messbereiche?",a:"Voltmeter: Vorwiderstand in Reihe, R_V = (n−1)·Rᵢ. Amperemeter: Shunt parallel, R_N = Rᵢ/(n−1). Beispiel: 100 µA/1 kΩ auf 10 V → 99 kΩ. (Backup-Folie 6)"},
+ {star:0,cat:"mess",q:"Spannungsrichtig oder stromrichtig – wann was?",a:"Kleine Widerstände → spannungsrichtig (Voltmeter direkt am Bauteil). Große Widerstände → stromrichtig (Amperemeter direkt am Bauteil). (Backup-Folie 7)"},
+ {star:1,cat:"sich",q:"Was bedeutet „CAT III 600 V“ auf dem Multimeter?",a:"Ausgelegt für Messungen in der Gebäudeinstallation (Verteiler, fest angeschlossene Geräte) bis 600 V gegen Erde, inklusive der dort zu erwartenden Überspannungsimpulse. Auch in CAT II/I nutzbar, nicht in CAT IV."},
+ {star:0,cat:"sich",q:"Welche Kategorie hat eine normale Steckdose?",a:"Ein Gerät an der Steckdose ist CAT II. Die Steckdose selbst wird je nach Nähe zum Verteiler CAT II oder CAT III zugeordnet – im Zweifel die höhere Kategorie wählen."},
+ {star:0,cat:"sich",q:"Gilt die Kategorie auch für die Messleitungen?",a:"Ja. Die niedrigste Einstufung aller Teile (Gerät, Leitungen, Prüfspitzen) gilt für die gesamte Messanordnung."},
+ {star:0,cat:"sich",q:"Die Sicherung im Multimeter ist durchgebrannt – kann ich irgendeine einsetzen?",a:"Nein. Nur eine gleichwertige laut Hersteller: Nennstrom, Nennspannung und vor allem Schaltvermögen. Eine normale Feinsicherung löscht einen Lichtbogen nicht sicher."},
+ {star:0,cat:"sich",q:"Darf ich als Azubi an 230 V messen?",a:"Nach DGUV Vorschrift 3 sind Arbeiten an elektrischen Anlagen Elektrofachkräften bzw. unterwiesenen Personen unter Leitung und Aufsicht einer Elektrofachkraft vorbehalten. Bei uns gilt die betriebliche Regelung bzw. die Anweisung des Ausbilders."},
+ {star:1,cat:"adc",q:"Was ist der Unterschied zwischen Auflösung und Genauigkeit?",a:"Auflösung = kleinste unterscheidbare Änderung (1 LSB). Genauigkeit = wie nah der Wert am wahren Wert liegt. Ein 16-Bit-ADC mit schlechter Referenz löst fein auf und liegt trotzdem daneben."},
+ {star:1,cat:"adc",q:"Warum nimmt man nicht immer einen 24-Bit-ADC?",a:"Mehr Bit = langsamer und/oder teurer, und die zusätzlichen Bits sind oft nur Rauschen. Man wählt passend zur Anwendung: Geschwindigkeit gegen Auflösung."},
+ {star:1,cat:"adc",q:"Was ist ein LSB?",a:"Least Significant Bit – das niederwertigste Bit und zugleich die kleinste Spannungsstufe: U_LSB = U_ref / 2ⁿ. Bei 10 Bit und 5 V ≈ 4,88 mV."},
+ {star:0,cat:"adc",q:"Was mache ich, wenn meine Spannung größer als die Referenzspannung ist (z. B. 12 V am Arduino)?",a:"Spannungsteiler davorschalten, der in den Bereich 0…5 V bringt, und im Programm zurückrechnen. Nie mehr als die erlaubte Spannung an den Pin legen."},
+ {star:0,cat:"adc",q:"Was macht „Sample & Hold“?",a:"Ein Kondensator speichert den Wert zum Abtastzeitpunkt und hält ihn konstant, während der ADC wandelt."},
+ {star:1,cat:"adc",q:"Was ist Aliasing – mit Alltagsbeispiel?",a:"Wagenrad-Effekt im Film: Das Rad dreht sich scheinbar langsam rückwärts, weil die Kamera zu selten „abtastet“. Abhilfe beim ADC: f_A > 2 f_max und ein Anti-Aliasing-Tiefpass."},
+ {star:0,cat:"adc",q:"Warum tastet die Audio-CD mit 44,1 kHz ab?",a:"Wir hören bis ca. 20 kHz → mindestens 40 kHz nötig; der Abstand zu 44,1 kHz lässt Platz für das Anti-Aliasing-Filter."},
+ {star:0,cat:"adc",q:"Welcher ADC steckt im Arduino Uno?",a:"Ein 10-Bit-SAR-Wandler im ATmega328P mit 8 gemultiplexten Eingängen (am Uno A0–A5). Eine Wandlung dauert 13 ADC-Takte, ca. 0,1 ms."},
+ {star:0,cat:"adc",q:"Was ist das Gegenstück zum ADC?",a:"Der DAC (Digital-Analog-Wandler), z. B. als R-2R-Netzwerk. Im SAR-Wandler steckt intern ein DAC für die Vergleichsspannung."},
+ {star:0,cat:"dmm",q:"🎓 Warum ist der Dual-Slope-Wandler so genau?",a:"Dieselbe RC-Kombination und derselbe Takt werden beim Integrieren und Zurückintegrieren genutzt → Toleranzen kürzen sich heraus. Integrationszeit = Vielfaches von 20 ms → Netzbrummen mittelt sich heraus."},
+ {star:1,cat:"dmm",q:"Was bedeutet „3½ Stellen“?",a:"Drei volle Ziffern plus eine halbe vorderste Stelle (nur 0 oder 1) → max. Anzeige 1999, also 2000 Counts. Moderne Geräte zählen z. B. bis 6000."},
+ {star:1,cat:"dmm",q:"Wie lese ich „±(1 % v. Mw. + 2 Digits)“?",a:"1 % vom angezeigten Messwert plus 2 Einheiten der letzten Stelle. Anzeige 100,0 V → ±(1,0 V + 0,2 V) → 98,8 … 101,2 V."},
+ {star:0,cat:"dmm",q:"Was bedeutet TRMS?",a:"Echt-Effektivwert: misst auch nicht-sinusförmige Signale korrekt (Dimmer, Schaltnetzteile). Einfache Geräte rechnen mit dem Sinus-Formfaktor 1,11 und zeigen bei Verzerrung oft zu wenig an."},
+ {star:0,cat:"dmm",q:"Warum zeigt das Multimeter an offenen Leitungen manchmal „Geisterspannungen“?",a:"Wegen der 10 MΩ reichen kapazitiv eingekoppelte Spannungen benachbarter Leitungen für eine Anzeige. Abhilfe: niederohmiger Messmodus (LoZ)."},
+ {star:0,cat:"dmm",q:"N1 · Was heißt „OL“ auf dem Display?",a:"[LB] Overload: Messwert über dem Bereich → größeren Bereich wählen. Bei Widerstand/Durchgang: offener Kreis."},
+ {star:0,cat:"mess",q:"N2 · Analog- oder Digitalmultimeter – was ist besser?",a:"[LB] Digital: genauer ablesbar, hochohmig (10 MΩ), Autorange. Analog: zeigt Trends und Schwankungen besser, aber Ablesefehler und meist niederohmiger (z. B. 20 kΩ/V)."},
+ {star:0,cat:"dmm",q:"N3 · Was ist ein Komparator?",a:"[LB] Vergleicht zwei Spannungen und gibt 1 oder 0 aus, je nachdem, welche größer ist. Grundbaustein von Flash- und SAR-Wandlern."},
+ {star:0,cat:"mess",q:"N4 · Wie groß wäre ein Shunt für 10 A, wenn 100 mV abfallen sollen?",a:"R = 0,1 V / 10 A = <b>10 mΩ</b>; Leistung P = I²·R = <b>1 W</b> → der 10-A-Bereich wird warm und ist oft zeitlich begrenzt."},
+ {star:0,cat:"mess",q:"N5 · Warum hat das Multimeter eine mA- und eine 10-A-Buchse?",a:"[LB] Unterschiedliche Shunts und Sicherungen: kleiner Strom → größerer Shunt für genug Messspannung; großer Strom → sehr kleiner, belastbarer Shunt."},
+ {star:0,cat:"dmm",q:"N6 · Effektivwert vs. Gleichrichtwert?",a:"[LB] Effektivwert = gleiche Wärmewirkung wie Gleichspannung. Einfache Geräte messen den Gleichrichtwert und multiplizieren mit dem Sinus-Formfaktor ≈ 1,11 – stimmt nur bei Sinus."},
+ {star:0,cat:"dmm",q:"N7 · Was ist Autorange?",a:"[LB] Das Messgerät wählt den Messbereich selbst; ist der Wert zu groß („OL“), schaltet es eine Stufe höher."},
+ {star:0,cat:"dmm",q:"N8 · Wie viele Bit entsprechen 2000 Counts?",a:"log₂(2000) ≈ <b>11 Bit</b> – ein 3½-stelliges DMM löst etwa wie ein 11-Bit-ADC auf."},
+ {star:0,cat:"adc",q:"N9 · Was passiert, wenn U_ein größer als U_ref ist?",a:"[LB] Der ADC gibt den Maximalwert aus (10 Bit: 1023), der Messwert ist falsch. Über dem zulässigen Pinwert kann der Eingang Schaden nehmen → Spannungsteiler."},
+ {star:0,cat:"mess",q:"N10 · Warum gerade 10 MΩ und nicht noch mehr?",a:"[LB] Kompromiss: hoch genug für kleinen Belastungsfehler, aber nicht so hoch, dass eingestreute Störspannungen zu stark werden."},
+ {star:0,cat:"dmm",q:"N11 · Wie oft misst ein Multimeter pro Sekunde?",a:"[LB] Einfache Geräte mit integrierendem Wandler nur einige Messungen pro Sekunde (Datenblatt). Für schnelle Signale nimmt man ein Oszilloskop."},
+ {star:0,cat:"dmm",q:"N12 · Unterschied Multimeter und Oszilloskop?",a:"[LB] Multimeter: ein genauer, gemittelter Zahlenwert. Oszilloskop: zeitlicher Verlauf, sehr schnelle Abtastung, dafür gröber aufgelöst."},
+ {star:0,cat:"adc",q:"N13 · Du sagst „±½ LSB“ – aber beim SAR-Beispiel war der Rest fast 1 LSB. Was stimmt?",a:"Beides, je nach Bezug: Der ADC entscheidet nur, <strong>in welcher Stufe</strong> die Spannung liegt. Bezogen auf die <strong>Stufenmitte</strong> (bzw. gerundet) ist der Fehler höchstens ±½ LSB; beim <strong>reinen Abrunden</strong> wie im Rechenbeispiel 0 … 1 LSB."}
+];
+
+/* ---------- Hilfen ---------- */
+const $=s=>document.querySelector(s);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+let score={ok:0,total:0};
+function updLcd(){$("#lcdVal").textContent=score.ok+" / "+score.total}
+function makeFilters(el,counts,onPick){
+  el.innerHTML="";
+  const all=Object.values(counts).reduce((s,n)=>s+n,0);
+  const items=[["all","Alle",null,all],...Object.keys(CATS).filter(k=>counts[k]).map(k=>[k,CATS[k].label,CATS[k].color,counts[k]])];
+  items.forEach(([k,l,c,n],i)=>{
+    const b=document.createElement("button");b.className="chip";b.type="button";b.setAttribute("aria-pressed",i===0?"true":"false");
+    if(c)b.style.setProperty("--dc",c);
+    b.innerHTML=(c?'<span class="dot"></span>':"")+l+' <span class="count">'+n+"</span>";
+    b.onclick=()=>{el.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");onPick(k)};
+    el.appendChild(b)});
+}
+const countBy=arr=>arr.reduce((m,x)=>(m[x.cat]=(m[x.cat]||0)+1,m),{});
+
+/* ---------- Modus ---------- */
+let mode="cards";
+document.querySelectorAll(".modes button").forEach(b=>b.onclick=()=>{
+  mode=b.dataset.mode;
+  document.querySelectorAll(".modes button").forEach(x=>x.setAttribute("aria-selected",x===b?"true":"false"));
+  ["cards","calc","qa"].forEach(m=>$("#mode-"+m).hidden=m!==mode);
+  if(mode!=="qa")stopTimer();
+});
+
+/* ---------- Karteikarten ---------- */
+let cFilter="all",deck=[],ci=0,again=new Set(),known=new Set();
+const LS="messwert-trainer-nochmal";let saved=new Set();
+try{saved=new Set(JSON.parse(localStorage.getItem(LS)||"[]"))}catch(e){}
+function saveAgain(){try{localStorage.setItem(LS,JSON.stringify([...saved]))}catch(e){}updSaved()}
+function updSaved(){const b=$("#cardSaved");b.textContent="Gemerkte „Nochmal“ ("+saved.size+")";b.hidden=saved.size===0}
+function buildDeck(list){deck=list?list.slice():cards.filter(c=>cFilter==="all"||c.cat===cFilter);ci=0;again=new Set();known=new Set();$("#cardDone").hidden=true;$("#cardWrap").hidden=false;$("#cardControls").hidden=false;showCard()}
+function showCard(){
+  const w=$("#cardWrap"),inner=w.querySelector(".card-inner");inner.style.transition="none";w.classList.remove("flipped");void inner.offsetWidth;inner.style.transition="";
+  if(!deck.length)return;
+  const c=deck[ci],cat=CATS[c.cat];
+  [$("#cFrontTag"),$("#cBackTag")].forEach(t=>{t.textContent=cat.label;t.style.setProperty("--dc",cat.color)});
+  $("#cQ").textContent=c.q;$("#cA").innerHTML=c.a;
+  const done=known.size+again.size;
+  $("#cardCount").textContent=Math.min(ci+1,deck.length)+" / "+deck.length;
+  $("#cardBar").style.width=(done/deck.length*100)+"%";
+}
+function rate(k){const c=deck[ci];(k?known:again).add(c);(k?again:known).delete(c);const id=cards.indexOf(c);k?saved.delete(id):saved.add(id);saveAgain();step(1)}
+function step(d){
+  if(d>0&&ci===deck.length-1){finishCards();return}
+  ci=Math.max(0,Math.min(deck.length-1,ci+d));showCard()}
+function finishCards(){
+  $("#cardBar").style.width="100%";$("#cardWrap").hidden=true;$("#cardControls").hidden=true;$("#cardDone").hidden=false;
+  $("#cardDoneText").textContent=`Gewusst: ${known.size} · Nochmal: ${again.size} · ohne Bewertung: ${deck.length-known.size-again.size}`;
+  $("#cardRetryWrong").hidden=again.size===0;
+}
+$("#cardWrap").onclick=()=>$("#cardWrap").classList.toggle("flipped");
+$("#cardNext").onclick=()=>step(1);$("#cardPrev").onclick=()=>step(-1);
+$("#cardKnew").onclick=()=>rate(true);$("#cardAgain").onclick=()=>rate(false);
+$("#cardShuffle").onclick=()=>{shuffle(deck);ci=0;showCard()};
+$("#cardRestart").onclick=$("#cardRestart2").onclick=()=>buildDeck();
+$("#cardRetryWrong").onclick=()=>buildDeck(shuffle([...again]));
+$("#cardSaved").onclick=()=>buildDeck(shuffle([...saved].map(i=>cards[i]).filter(Boolean)));updSaved();
+makeFilters($("#cardFilters"),countBy(cards),k=>{cFilter=k;buildDeck()});
+document.addEventListener("keydown",e=>{
+  if(mode!=="cards"||e.target.tagName==="INPUT"||$("#cardWrap").hidden)return;
+  if(e.code==="Space"){e.preventDefault();$("#cardWrap").classList.toggle("flipped")}
+  else if(e.key==="ArrowRight")step(1);else if(e.key==="ArrowLeft")step(-1);
+  else if(e.key==="g"||e.key==="G")rate(true);else if(e.key==="n"||e.key==="N")rate(false);
+});
+
+/* ---------- Rechnen & Fehler ---------- */
+let tFilter="all",tList=[],ti=0,tState={};
+function buildTasks(){tList=tasks.filter(t=>tFilter==="all"||t.cat===tFilter);tList.forEach(t=>{if(t.type==="mc")t.perm=shuffle(t.opts.map((_,i)=>i))});ti=0;showTask()}
+function parseNum(s){s=(s||"").trim().replace(/\s/g,"").replace(",",".");return s===""?NaN:Number(s)}
+function fmt(x){return String(x).replace(".",",")}
+function showTask(){
+  const t=tList[ti],body=$("#calcBody"),st=tState[t.id];
+  $("#calcCount").textContent=(ti+1)+" / "+tList.length;
+  $("#calcBar").style.width=(tList.filter(x=>tState[x.id]).length/tList.length*100)+"%";
+  const cat=CATS[t.cat];
+  let h=`<div class="task-head"><span class="task-id">${t.id}</span><span class="tag" style="--dc:${cat.color}">${cat.label}</span></div><div class="task-q">${t.q}</div>`;
+  if(t.type==="mc"){
+    h+=`<div class="opts">`+(t.perm||t.opts.map((_,i)=>i)).map(i=>`<button class="opt" type="button" data-i="${i}">${t.opts[i]}</button>`).join("")+`</div>`;
+  }else{
+    h+=`<div class="answer-row"><input id="ans-${t.id}" inputmode="decimal" autocomplete="off" aria-label="Antwort"${st?` value="${st.val}" disabled`:""}><span class="unit">${t.unit}</span><button class="btn primary" type="button" id="check">Prüfen</button><button class="btn" type="button" id="reveal">Lösung zeigen</button></div>`;
+  }
+  h+=`<div id="fb"></div>`;body.innerHTML=h;
+  if(t.type==="mc"){
+    body.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{if(tState[t.id])return;answerMc(t,+b.dataset.i)});
+    if(st)renderMc(t,st.pick);
+  }else{
+    const inp=$("#ans-"+t.id);
+    $("#check").onclick=()=>checkNum(t);$("#reveal").onclick=()=>{if(!tState[t.id]){tState[t.id]={val:"",right:false,revealed:true};score.total++;updLcd()}renderNum(t)};
+    inp.onkeydown=e=>{if(e.key==="Enter")checkNum(t)};
+    if(st)renderNum(t);else inp.focus({preventScroll:true});
+  }
+}
+function checkNum(t){
+  if(tState[t.id])return;
+  const v=parseNum($("#ans-"+t.id).value);
+  if(isNaN(v)){$("#fb").innerHTML=`<div class="fb info">Bitte eine Zahl eingeben, z. B. ${fmt(t.ans>100?Math.round(t.ans/10)*10:1.5)}.</div>`;return}
+  const right=Math.abs(v-t.ans)<=t.tol+1e-9;
+  tState[t.id]={val:$("#ans-"+t.id).value,right};score.total++;if(right)score.ok++;updLcd();renderNum(t);
+}
+function renderNum(t){
+  const st=tState[t.id];
+  $("#calcBar").style.width=(tList.filter(x=>tState[x.id]).length/tList.length*100)+"%";
+  const inp=$("#ans-"+t.id);if(inp)inp.disabled=true;
+  const cls=st.revealed?"info":(st.right?"right":"wrong");
+  const lbl=st.revealed?"Lösung":(st.right?"Richtig":"Noch nicht – richtig ist "+fmt(t.ans)+" "+t.unit);
+  $("#fb").innerHTML=`<div class="fb ${cls}"><b class="lbl">${lbl}</b>${t.sol}</div>`;
+}
+function answerMc(t,i){const right=i===t.ok;tState[t.id]={pick:i,right};score.total++;if(right)score.ok++;updLcd();renderMc(t,i)}
+function renderMc(t,i){
+  document.querySelectorAll(".opt").forEach(b=>{const k=+b.dataset.i;if(k===t.ok)b.classList.add("right");else if(k===i)b.classList.add("wrong");b.disabled=true});
+  const right=i===t.ok;
+  $("#fb").innerHTML=`<div class="fb ${right?"right":"wrong"}"><b class="lbl">${right?"Richtig":"Nicht ganz"}</b>${t.sol}</div>`;
+  $("#calcBar").style.width=(tList.filter(x=>tState[x.id]).length/tList.length*100)+"%";
+}
+$("#calcNext").onclick=()=>{ti=(ti+1)%tList.length;showTask()};
+$("#calcPrev").onclick=()=>{ti=(ti-1+tList.length)%tList.length;showTask()};
+$("#calcShuffle").onclick=()=>{shuffle(tList);ti=0;showTask()};
+$("#calcRestart").onclick=()=>{tState={};score={ok:0,total:0};updLcd();buildTasks()};
+makeFilters($("#calcFilters"),countBy(tasks),k=>{tFilter=k;buildTasks()});
+
+/* ---------- Rückfragen ---------- */
+let qList=[],qi=0,qRes={},timer=null,tLeft=30;
+function buildQa(list){
+  qList=list?list.slice():shuffle(qas.filter(q=>!$("#qaStarOnly").checked||q.star));
+  qi=0;qRes={};$("#qaDone").hidden=true;showQa();
+}
+function showQa(){
+  stopTimer();tLeft=30;renderTimer();
+  const left=qList.length-qi;$("#sLeft").textContent=left;
+  ["ok","warn","bad"].forEach(r=>$("#s"+(r==="ok"?"Ok":r==="warn"?"Warn":"Bad")).textContent=Object.values(qRes).filter(x=>x===r).length);
+  if(qi>=qList.length){finishQa();return}
+  const q=qList[qi];
+  $("#qaTag").textContent=(q.star?"⭐ ":"")+CATS[q.cat].label;$("#qaTag").style.setProperty("--dc",CATS[q.cat].color);
+  $("#qaQ").textContent=q.q;$("#qaA").hidden=true;$("#qaA").innerHTML=q.a;$("#qaRate").hidden=true;
+  $("#qaStart").hidden=false;$("#qaShow").hidden=false;
+}
+function renderTimer(){const t=$("#qaTimer");t.textContent="0:"+String(Math.max(0,tLeft)).padStart(2,"0");t.classList.toggle("low",tLeft<=5)}
+function stopTimer(){if(timer){clearInterval(timer);timer=null}}
+$("#qaStart").onclick=()=>{stopTimer();tLeft=30;renderTimer();timer=setInterval(()=>{tLeft--;renderTimer();if(tLeft<=0){stopTimer();reveal()}},1000)};
+function reveal(){stopTimer();$("#qaA").hidden=false;$("#qaRate").hidden=false;$("#qaShow").hidden=true;$("#qaStart").hidden=true}
+$("#qaShow").onclick=reveal;
+$("#qaRate").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  const r=b.dataset.r;qRes[qi]=r;qi++;showQa()});
+function finishQa(){
+  stopTimer();$("#qaDone").hidden=false;$("#qaRate").hidden=true;$("#qaStart").hidden=true;$("#qaShow").hidden=true;$("#qaA").hidden=true;
+  $("#qaQ").textContent="";$("#qaTag").textContent="";
+  const c=r=>Object.values(qRes).filter(x=>x===r).length;
+  $("#qaDoneText").textContent=`Sicher: ${c("ok")} · Wackelig: ${c("warn")} · Falsch: ${c("bad")}`;
+  $("#qaRetry").hidden=c("warn")+c("bad")===0;
+}
+$("#qaRetry").onclick=()=>buildQa(shuffle(qList.filter((q,i)=>qRes[i]&&qRes[i]!=="ok")));
+$("#qaRestart").onclick=()=>buildQa();
+$("#qaStarOnly").onchange=()=>buildQa();
+
+/* ---------- Start ---------- */
+buildDeck();buildTasks();buildQa();updLcd();
+</script>
+
+</body>
+</html>

@@ -13,6 +13,12 @@ Thema: *Analog-Digital-Wandler, Amperemeter und Voltmeter* · Termin: **Fr, 02.1
 | [`03_Spickzettel.md`](03_Spickzettel.md) / [`spickzettel/spickzettel.tex`](spickzettel/spickzettel.tex) | 1-Seiten-Spickzettel (Formeln, Zahlen, Zeitplan) | Obsidian / TeXstudio |
 | [`04_Quellen.md`](04_Quellen.md) | Quellenverzeichnis inkl. Kurzfassung für eine Quellenfolie | Obsidian |
 | [`05_Recherche_Nachschlagewerk.md`](05_Recherche_Nachschlagewerk.md) / [`recherche/recherche.tex`](recherche/recherche.tex) | **Recherche-Nachschlagewerk**: alle Rechercheergebnisse thematisch, mit Schnellnavigation, Formelindex, Glossar und Quellenkürzel je Fakt (TeX-Version mit klickbarem Inhaltsverzeichnis/Lesezeichen) | Obsidian / TeXstudio |
+| [`lernen/06_Lernplan_2h.md`](lernen/06_Lernplan_2h.md) | **2-h-Lernplan** für den Tag vor dem Vortrag: Blöcke mit Uhrzeiten, Abrufübungen, zwei Probevorträge, Rückfragen-Drill | Obsidian |
+| [`lernen/07_Karteikarten.md`](lernen/07_Karteikarten.md) | 50 Karteikarten (Format für das Obsidian-Plugin Spaced Repetition) | Obsidian |
+| [`lernen/08_Uebungen.md`](lernen/08_Uebungen.md) | Rechenaufgaben R1–R13 mit aufklappbaren Lösungen, Fehleraufgaben F1–F7, Teach-back T1–T5 | Obsidian |
+| [`lernen/09_Vortragstraining.md`](lernen/09_Vortragstraining.md) | Einstieg/Schluss wörtlich, Stichwortkarte mit Soll-Zeiten, Checkpoints, Überleitungen, Notfallpläne | Obsidian / Ausdruck |
+| [`lernen/10_Rueckfragen_Drill.md`](lernen/10_Rueckfragen_Drill.md) | Drill-Ablauf, neue Rückfragen N1–N13, „Zahlen auf Zuruf“ | Obsidian |
+| [`lernen/11_Messwert-Trainer.html`](lernen/11_Messwert-Trainer.html) | Interaktiver Trainer (offline): Karteikarten, Rechnen mit Eingabe, Rückfragen mit 30-s-Timer | Browser |
 
 ## Ablauf für morgen früh (≈ 60–75 Min)
 

@@ -1,0 +1,17 @@
+# Auftrag: Vortragsvorbereitung „Vom Messwert zur Zahl"
+- Ziel: Morgen den 15-Min-Vortrag (VWIF Modul 022) frei, im Zeitrahmen und fachlich sicher halten; Rückfragen souverän beantworten.
+- Deliverables: 2-h-Lernplan (.md), Abruf-Karteikarten + Rechen-/Verständnisübungen + Rückfragen-Drill (.md, Obsidian), interaktives Lernmaterial (Artifact via lernmaterial-Skill)
+- Zeitrahmen: heute ~2 h (ein Block, mit Pausen)
+- Gewichtung: ~45 min Vortrag/Timing · ~45 min Fachverständnis/Rechnen · ~30 min Rückfragen
+- Scope (drin): Inhalte der 15 Folien inkl. Backup-Folien 6, 7, 13; Q&A aus 02_QA_Vorbereitung; Zahlen aus 03_Spickzettel
+- Scope (raus): neue Fachthemen außerhalb der Folien; Foliendesign
+- Fassung: 15 Min (10-Min-Kürzung als Notfallplan)
+- Stand Inhalte: unverändert wie im Repo
+- Quellmaterial: 01_Folieninhalt_und_Varianten.md, 02_QA_Vorbereitung.md, 03_Spickzettel.md, 04_Quellen.md, 05_Recherche_Nachschlagewerk.md, slides/praesentation.tex
+- Gewählte Skills/Tools:
+  - anthropic-skills:lernmaterial → interaktive Karteikarten/Quiz/Rückfragen-Simulation
+  - academic-research:paper-reviewing (zweckentfremdet) → unabhängiger Review-Subagent als Qualitäts-Gate für Fragen/Lösungen
+  - Bash/Python → empirische Nachrechnung aller Zahlen in Aufgaben & Lösungen
+  - Lernmethoden aus education-agent-skills (Plugin hier nicht installiert) → direkt angewandt: Retrieval Practice, Teach-back, Interleaving, Worked-Example-Fading, Confidence-Calibration
+- Verworfen: literature-survey / paper-triggered-survey (Recherche liegt vollständig vor), poster-slides-maker (Folien existieren), homework-machine (keine Aufgabenbearbeitung)
+- Offene Annahmen: keine
