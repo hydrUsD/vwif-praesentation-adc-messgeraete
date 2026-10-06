@@ -52,3 +52,13 @@ Im Beamer-Deck umschalten: in `slides/praesentation.tex` Zeile `\kurzfassungfals
 ## Fachliche Prüfung
 
 Alle Rechenbeispiele (LSB-Werte, Belastungsfehler, Bürdenspannung, Messbereichserweiterung, SAR-Beispiel, Genauigkeitsangabe, Zeitplan-Summen) wurden programmatisch nachgerechnet. Quellen: siehe [`04_Quellen.md`](04_Quellen.md).
+
+## Zweiter Vortrag: DAC – Digital-Analog-Wandler (Ordner `dac/`)
+
+| Datei | Inhalt | Öffnen mit |
+|---|---|---|
+| [`dac/01_Folieninhalt_und_Varianten.md`](dac/01_Folieninhalt_und_Varianten.md) | 7 Folien (~5:30 min, kürzbar auf 4:45) mit Layoutvarianten, Sprechernotizen, Backup-Folien | Obsidian / Copilot-Vorlage |
+| [`dac/slides/dac.tex`](dac/slides/dac.tex) | Beamer-Folien inkl. R-2R-Schaltbild, Kennlinie, Sinus/Cosinus-Plot | TeXstudio |
+| [`dac/02_QA_Vorbereitung.md`](dac/02_QA_Vorbereitung.md) · [`03_Spickzettel`](dac/03_Spickzettel.md) · [`04_Quellen`](dac/04_Quellen.md) | Rückfragen (⭐ wahrscheinlich), Spickzettel, Quellen | Obsidian |
+| [`dac/lernen/`](dac/lernen/) | 20-min-Lernplan + Stichwortkarte, 28 Karteikarten, Übungen/Drill, interaktiver DAC-Trainer (offline) | Obsidian / Browser |
+

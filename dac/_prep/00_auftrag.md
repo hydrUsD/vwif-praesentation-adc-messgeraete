@@ -1,0 +1,17 @@
+# Auftrag: Vortrag „DAC – Digital-Analog-Wandler“ (VWIF)
+- Ziel: Heute Nachmittag einen eigenständigen Kurzvortrag (~5:30 min) über den DAC halten – frei, im Zeitrahmen, Rückfragen sicher beantworten.
+- Themenvorgabe: DAC – Funktionsweise anhand eines einfachen DAC (nicht komplett im Detail); Warum digitale Signale zurück ins Analoge? (Hinweis: Analogwandlung eines Sinus-/Cosinus-Signals). Die übrigen Themen (Analog/Digital, ADC, Nyquist) deckt der letzte Vortrag ab.
+- Deliverables (gleiches Paket, kompakt): Folieninhalt + Layoutvarianten + Sprechernotizen (.md), Beamer-Folien (.tex), Q&A, Spickzettel, Quellen; Lernmaterial: 20-min-Lernplan, Karteikarten, Rückfragen-Drill (.md) + interaktiver Trainer (Artifact + Offline-Kopie)
+- Zeitrahmen: Vortrag heute Nachmittag; Lernzeit 20 min direkt davor (fester Plan)
+- Scope (drin): Aufgabe des DAC, Prinzip Code → Spannung (LSB, Kennlinie), R-2R-Netzwerk, Sinus/Cosinus aus Wertetabelle + Rekonstruktionsfilter, Kurzbezug ADC/Nyquist
+- Scope (raus): Details anderer DAC-Bauarten (nur Q&A), Herleitung R-2R per Thevenin (nur Q&A), Delta-Sigma-Interna
+- Bezug zum letzten Vortrag: eigenständig verständlich, neue Zahlen und Beispiele (kein Arduino-/Multimeter-Beispiel wiederholen)
+- DAC-Beispiel: R-2R-Netzwerk
+- Ablage: Repo vwif-praesentation-adc-messgeraete, Ordner `dac/`; Dateien zusätzlich im Chat; Push über den Mac, sobald er verbunden ist
+- Gewählte Skills/Tools:
+  - WebSearch → Faktenprüfung + Quellen (Datenblätter, Lehrbuch-/Hochschulquellen)
+  - Python → Nachrechnen aller Zahlen (LSB, R-2R-Ausgang, Sinus-Tabelle) + Schaltungssimulation R-2R per Knotenanalyse
+  - anthropic-skills:lernmaterial → interaktiver Trainer
+  - academic-research:paper-reviewing (zweckentfremdet) → unabhängiger Review-Subagent als Qualitäts-Gate
+  - Lernmethoden (education-agent-skills nicht installiert) direkt: Retrieval Practice, Teach-back, Fehlerbeispiele
+- Verworfen: poster-slides-maker (erzeugt reveal.js aus Paper; Beamer + .md-Vorlage bleibt konsistent zum letzten Vortrag und zur Copilot-Firmenvorlage), literature-survey (Lehrbuchwissen, kein Forschungsstand nötig), homework-machine

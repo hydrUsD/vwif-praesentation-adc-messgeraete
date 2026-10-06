@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>DAC-Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+[hidden]{display:none!important}
+/* Layout: ein schmales Messgeräte-Panel; oben Moduswahl (Drehschalter-Metapher), darunter die Arbeitsfläche; Zähler im LCD-Stil */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --panel-2:#f5f7f9; --fg:#18212b; --muted:#5b6876; --line:#d3dae2;
+  --accent:#b86a00; --accent-ink:#ffffff; --accent-soft:#fbecd6;
+  --lcd:#d9e3c8; --lcd-ink:#1f2a12;
+  --ok:#1d7f4e; --ok-soft:#dcf1e5; --warn:#a86400; --warn-soft:#fbeed8; --bad:#b4302a; --bad-soft:#f7dedc;
+  --c-mess:#2a6fb0; --c-sich:#b4302a; --c-adc:#6b4fbf; --c-dmm:#1d7f4e;
+  --font-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --font-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"Consolas",monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161b; --panel:#1b2129; --panel-2:#222a33; --fg:#e4e9ee; --muted:#9aa7b4; --line:#323c47;
+  --accent:#f0a33a; --accent-ink:#1a1206; --accent-soft:#3a2a12;
+  --lcd:#2b3420; --lcd-ink:#cfe6a6;
+  --ok:#4cc38a; --ok-soft:#173527; --warn:#f0a33a; --warn-soft:#3a2a12; --bad:#ef6a62; --bad-soft:#3d1c1a;
+  --c-mess:#6aa8e6; --c-sich:#ef6a62; --c-adc:#a993f0; --c-dmm:#4cc38a;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161b; --panel:#1b2129; --panel-2:#222a33; --fg:#e4e9ee; --muted:#9aa7b4; --line:#323c47;
+  --accent:#f0a33a; --accent-ink:#1a1206; --accent-soft:#3a2a12;
+  --lcd:#2b3420; --lcd-ink:#cfe6a6;
+  --ok:#4cc38a; --ok-soft:#173527; --warn:#f0a33a; --warn-soft:#3a2a12; --bad:#ef6a62; --bad-soft:#3d1c1a;
+  --c-mess:#6aa8e6; --c-sich:#ef6a62; --c-adc:#a993f0; --c-dmm:#4cc38a;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.5}
+.wrap{max-width:780px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--font-display);font-stretch:112%;font-weight:800;font-size:clamp(1.6rem,4.5vw,2.2rem);line-height:1.05;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.95rem}
+.lcd{font-family:var(--font-mono);background:var(--lcd);color:var(--lcd-ink);border-radius:6px;padding:6px 12px;font-size:1.05rem;font-variant-numeric:tabular-nums;letter-spacing:.04em;border:1px solid var(--line);white-space:nowrap}
+.lcd small{font-size:.7rem;opacity:.8;letter-spacing:.08em;text-transform:uppercase;margin-right:6px}
+/* Modus-Wahl */
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px}
+.modes button{font:600 .95rem var(--font-body);border:0;background:transparent;color:var(--muted);padding:9px 8px;border-radius:999px;cursor:pointer}
+.modes button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.modes button:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 .85rem var(--font-body);border:1px solid var(--line);background:var(--panel-2);color:var(--fg);border-radius:999px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--dc,var(--muted))}
+.chip[aria-pressed="true"]{border-color:var(--dc,var(--accent));background:var(--accent-soft)}
+.progress{display:flex;align-items:center;gap:10px}
+.bar{flex:1;height:6px;background:var(--panel-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+.count{font-family:var(--font-mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+/* Karte */
+.card-wrap{perspective:1200px;cursor:pointer;min-height:260px}
+.card-inner{position:relative;width:100%;min-height:260px;transition:transform .5s;transform-style:preserve-3d}
+.card-wrap.flipped .card-inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.back{transform:rotateY(180deg)}
+.tag{font:600 .72rem var(--font-body);text-transform:uppercase;letter-spacing:.09em;color:var(--dc)}
+.q{font-family:var(--font-display);font-stretch:112%;font-weight:600;font-size:clamp(1.15rem,3.2vw,1.45rem);line-height:1.25;text-wrap:balance;margin:auto 0}
+.a{font-size:1.05rem}
+.a strong{color:var(--accent)}
+.hint{color:var(--muted);font-size:.8rem;margin-top:auto}
+.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.btn{font:600 .95rem var(--font-body);border:1px solid var(--line);background:var(--panel-2);color:var(--fg);border-radius:8px;padding:9px 14px;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--fg)}
+.btn.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--fg)}
+.btn.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--fg)}
+.kb{color:var(--muted);font-size:.8rem;text-align:center}
+kbd{font-family:var(--font-mono);font-size:.75rem;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--panel-2)}
+.done{text-align:center;padding:24px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.done h2{font-family:var(--font-display);font-stretch:112%;margin:0}
+/* Rechnen */
+.task-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.task-id{font-family:var(--font-mono);font-weight:600;color:var(--accent)}
+.task-q{font-size:1.08rem;max-width:65ch}
+.answer-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.answer-row input{font:600 1.05rem var(--font-mono);width:12ch;max-width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);color:var(--fg);font-variant-numeric:tabular-nums}
+.unit{font-family:var(--font-mono);color:var(--muted)}
+.fb{border-radius:8px;padding:12px 14px;font-size:.98rem}
+.fb.right{background:var(--ok-soft);border:1px solid var(--ok)}
+.fb.wrong{background:var(--bad-soft);border:1px solid var(--bad)}
+.fb.info{background:var(--panel-2);border:1px solid var(--line)}
+.fb b.lbl{display:block;margin-bottom:4px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;font:400 1rem var(--font-body);border:1px solid var(--line);background:var(--panel-2);color:var(--fg);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+/* Rückfragen */
+.timer{font-family:var(--font-mono);font-size:2rem;font-variant-numeric:tabular-nums;background:var(--lcd);color:var(--lcd-ink);border-radius:8px;padding:4px 14px;border:1px solid var(--line)}
+.timer.low{color:var(--bad)}
+.stats{display:flex;gap:10px;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+.stats span b{font-family:var(--font-mono);color:var(--fg)}
+.toggle{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
+.foot{color:var(--muted);font-size:.8rem;text-align:center}
+@media (prefers-reduced-motion:reduce){.card-inner,.bar i{transition:none}}
+@media (max-width:480px){.modes button{font-size:.85rem;padding:8px 4px}.face{padding:16px}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>DAC-Trainer</h1>
+      <p class="sub">Vorbereitung auf den Vortrag „Vom Bit zurück zum Signal“ · Digital-Analog-Wandler</p>
+    </div>
+    <div class="lcd" id="lcd" aria-live="polite"><small>Rechnen</small><span id="lcdVal">0 / 0</span></div>
+  </header>
+
+  <nav class="modes" role="tablist" aria-label="Lernmodus">
+    <button role="tab" id="tab-cards" aria-selected="true" data-mode="cards">Karteikarten</button>
+    <button role="tab" id="tab-calc" aria-selected="false" data-mode="calc">Rechnen &amp; Fehler</button>
+    <button role="tab" id="tab-qa" aria-selected="false" data-mode="qa">Rückfragen</button>
+  </nav>
+
+  <!-- KARTEIKARTEN -->
+  <section class="panel" id="mode-cards" aria-labelledby="tab-cards">
+    <div class="chips" id="cardFilters"></div>
+    <div class="progress"><div class="bar"><i id="cardBar"></i></div><span class="count" id="cardCount">0 / 0</span></div>
+    <div class="card-wrap" id="cardWrap" tabindex="0" aria-label="Karteikarte, zum Umdrehen klicken oder Leertaste">
+      <div class="card-inner">
+        <div class="face front"><span class="tag" id="cFrontTag"></span><div class="q" id="cQ"></div><span class="hint">Antwort laut sagen – dann umdrehen (Leertaste)</span></div>
+        <div class="face back"><span class="tag" id="cBackTag"></span><div class="a" id="cA"></div></div>
+      </div>
+    </div>
+    <div class="done" id="cardDone" hidden>
+      <h2>Alle durch</h2>
+      <p id="cardDoneText"></p>
+      <div class="controls"><button class="btn primary" id="cardRetryWrong">Nur „Nochmal“-Karten</button><button class="btn" id="cardRestart2">Alle neu starten</button></div>
+    </div>
+    <div class="controls" id="cardControls">
+      <button class="btn" id="cardPrev" aria-label="Vorherige Karte">←</button>
+      <button class="btn bad" id="cardAgain">Nochmal</button>
+      <button class="btn ok" id="cardKnew">Gewusst</button>
+      <button class="btn" id="cardNext" aria-label="Nächste Karte">→</button>
+      <button class="btn" id="cardShuffle">Mischen</button>
+      <button class="btn" id="cardRestart">Neustart</button>
+      <button class="btn" id="cardSaved" hidden title="Karten, die du in diesem Browser mit „Nochmal“ markiert hast">Gemerkte „Nochmal“</button>
+    </div>
+    <p class="kb"><kbd>Leertaste</kbd> umdrehen · <kbd>←</kbd> <kbd>→</kbd> blättern · <kbd>G</kbd> gewusst · <kbd>N</kbd> nochmal</p>
+  </section>
+
+  <!-- RECHNEN -->
+  <section class="panel" id="mode-calc" aria-labelledby="tab-calc" hidden>
+    <div class="chips" id="calcFilters"></div>
+    <div class="progress"><div class="bar"><i id="calcBar"></i></div><span class="count" id="calcCount">0 / 0</span></div>
+    <div id="calcBody"></div>
+    <div class="controls">
+      <button class="btn" id="calcPrev">← Zurück</button>
+      <button class="btn" id="calcShuffle">Mischen</button>
+      <button class="btn" id="calcRestart">Neustart</button>
+      <button class="btn primary" id="calcNext">Weiter →</button>
+    </div>
+    <p class="kb">Komma oder Punkt als Dezimaltrenner · <kbd>Enter</kbd> prüfen</p>
+  </section>
+
+  <!-- RÜCKFRAGEN -->
+  <section class="panel" id="mode-qa" aria-labelledby="tab-qa" hidden>
+    <div class="task-head">
+      <label class="toggle"><input type="checkbox" id="qaStarOnly"> nur ⭐-Fragen (sehr wahrscheinlich)</label>
+      <div class="stats"><span>sicher <b id="sOk">0</b></span><span>wackelig <b id="sWarn">0</b></span><span>falsch <b id="sBad">0</b></span><span>übrig <b id="sLeft">0</b></span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div class="timer" id="qaTimer" aria-live="off">0:30</div>
+      <div style="flex:1;min-width:0"><span class="tag" id="qaTag" style="--dc:var(--accent)"></span><div class="q" id="qaQ" style="margin:4px 0"></div></div>
+    </div>
+    <p class="hint" style="margin:0">Frage kurz wiederholen → 1-Satz-Antwort → 1 Satz Begründung. 30 Sekunden, laut.</p>
+    <div class="fb info" id="qaA" hidden></div>
+    <div class="controls">
+      <button class="btn" id="qaStart">Timer starten</button>
+      <button class="btn primary" id="qaShow">Musterantwort zeigen</button>
+    </div>
+    <div class="controls" id="qaRate" hidden>
+      <button class="btn ok" data-r="ok">Sicher</button>
+      <button class="btn warn" data-r="warn">Wackelig</button>
+      <button class="btn bad" data-r="bad">Falsch</button>
+    </div>
+    <div class="done" id="qaDone" hidden><h2>Fragerunde beendet</h2><p id="qaDoneText"></p><div class="controls"><button class="btn primary" id="qaRetry">Wackelige &amp; falsche wiederholen</button><button class="btn" id="qaRestart">Alle neu mischen</button></div></div>
+  </section>
+
+  <p class="foot">Alle Zahlen aus Präsentation und Übungen sind mit Python nachgerechnet; das R-2R-Netzwerk wurde per Knotenanalyse simuliert.</p>
+</div>
+
+<script>
+const CATS={
+  grund:{label:"Grundlagen",color:"var(--c-mess)"},
+  r2r:{label:"R-2R-Netzwerk",color:"var(--c-adc)"},
+  sinus:{label:"Sinus & Filter",color:"var(--c-dmm)"},
+  praxis:{label:"Praxis",color:"var(--c-sich)"}
+};
+const cards=[
+ {"cat": "grund", "q": "Was macht ein DAC?", "a": "Er wandelt einen digitalen Code (Binärzahl) in eine analoge Spannung um – das Gegenstück zum ADC."},
+ {"cat": "grund", "q": "Warum braucht man einen DAC, wenn doch digital gespeichert wird?", "a": "Lautsprecher, Motoren und unsere Sinne arbeiten analog; gespeicherte Zahlen (Festplatte, Stream) müssen wieder zu einer Spannung werden."},
+ {"cat": "grund", "q": "Formel für die Ausgangsspannung eines n-Bit-DAC?", "a": "U_aus = Code / 2ⁿ · U_ref"},
+ {"cat": "grund", "q": "4-Bit-DAC, U_ref = 8 V – wie groß ist 1 LSB?", "a": "8 V / 16 = 0,5 V."},
+ {"cat": "grund", "q": "Bitgewichte beim 4-Bit-DAC mit 8 V (MSB → LSB)?", "a": "4 V · 2 V · 1 V · 0,5 V (½, ¼, ⅛, 1/16 von U_ref)."},
+ {"cat": "grund", "q": "4 Bit, 8 V: Welche Spannung bei 1101?", "a": "13 · 0,5 V = 4 + 2 + 0,5 = 6,5 V."},
+ {"cat": "grund", "q": "Warum erreicht ein DAC nie ganz U_ref?", "a": "Der größte Code ist 2ⁿ − 1 → max. (2ⁿ − 1)/2ⁿ · U_ref, es fehlt genau 1 LSB (4 Bit, 8 V: 7,5 V)."},
+ {"cat": "grund", "q": "Wie sieht der DAC-Ausgang direkt am Wandler aus?", "a": "Als Treppe – jeder Wert wird bis zum nächsten gehalten."},
+ {"cat": "r2r", "q": "Welche Widerstandswerte braucht ein R-2R-Netzwerk?", "a": "Nur zwei: R (Längszweig) und 2R (Querzweige + Abschluss)."},
+ {"cat": "r2r", "q": "Wie viele Widerstände hat ein 8-Bit-R-2R?", "a": "2n = 16."},
+ {"cat": "r2r", "q": "Was macht ein Bit im R-2R-Netzwerk?", "a": "Bit = 1 schaltet seinen 2R-Zweig an U_ref, Bit = 0 an Masse."},
+ {"cat": "r2r", "q": "Warum bekommt jedes Bit sein richtiges Gewicht?", "a": "Rechts von jedem Knoten wirkt das Netz wie eine Quelle mit R; + Längs-R = 2R; mit dem nächsten 2R-Zweig → Teiler 1 : 1 → Beitrag halbiert sich pro Stufe → ½, ¼, ⅛ …"},
+ {"cat": "r2r", "q": "Nachteil gewichteter Widerstände gegenüber R-2R?", "a": "Viele verschiedene Werte (8 Bit: R bis 128R), schwer genau zu fertigen."},
+ {"cat": "r2r", "q": "Wozu der OpAmp am Ausgang des R-2R?", "a": "Puffer: Das Netzwerk hat Innenwiderstand R; eine Last würde die Spannung verfälschen (an Last R: 6,5 V → 3,25 V)."},
+ {"cat": "r2r", "q": "Warum ist die Toleranz beim MSB besonders kritisch?", "a": "Das MSB trägt die halbe Spannung; ist sein 2R-Zweig nur 2 % zu groß, ist ein 8-Bit-DAC nicht mehr monoton (127 → 128: −15 mV)."},
+ {"cat": "sinus", "q": "Wie erzeugt man mit einem DAC einen Sinus?", "a": "Eine Periode als Wertetabelle speichern und die Werte im festen Takt an den DAC geben; ein Tiefpass glättet."},
+ {"cat": "sinus", "q": "Formel Signalfrequenz bei Tabellen-Ausgabe?", "a": "f = Takt / Werte pro Periode (16 kHz / 16 = 1 kHz)."},
+ {"cat": "sinus", "q": "Wozu der Tiefpass hinter dem DAC?", "a": "Rekonstruktionsfilter: entfernt die Treppenkanten (Anteile über dem halben Takt) → glattes Signal."},
+ {"cat": "sinus", "q": "Wie bekommt man den Cosinus zum Sinus?", "a": "Dieselbe Tabelle, um ¼ Periode (90°) versetzt lesen – bei 16 Werten ab Index + 4 (4 Einträge voraus)."},
+ {"cat": "sinus", "q": "Wo braucht man Sinus und Cosinus gleichzeitig?", "a": "Z. B. Schrittmotor im Mikroschrittbetrieb (Spule A Sinus, Spule B Cosinus), Funktechnik (I/Q), Resolver."},
+ {"cat": "sinus", "q": "Gilt das Abtasttheorem auch beim DAC?", "a": "Ja – das ausgegebene Signal muss unter dem halben Takt liegen (16 kHz → &lt; 8 kHz)."},
+ {"cat": "sinus", "q": "Wie erzeugt ein Funktionsgenerator mit DDS einen Sinus?", "a": "Tabelle + Takt + DAC + Tiefpass; die Frequenz ändert er über die Schrittweite durch die Tabelle."},
+ {"cat": "praxis", "q": "Was bestimmen Bitzahl und Ausgaberate eines DAC?", "a": "Bitzahl = Feinheit der Treppe; Ausgaberate begrenzt die höchste Frequenz (unter der halben Rate)."},
+ {"cat": "praxis", "q": "Welchen DAC hat ein ESP32?", "a": "Zwei 8-Bit-DAC-Kanäle (GPIO25/26) mit eingebautem Cosinus-Generator."},
+ {"cat": "praxis", "q": "Welche Auflösung und Rate hat CD-Audio?", "a": "16 Bit, 44,1 kHz, Stereo → ≈ 1,41 Mbit/s."},
+ {"cat": "praxis", "q": "Welche Bauart haben Audio-DACs meistens?", "a": "Sigma-Delta (hoher Takt, wenige Stufen, Filter) – typisch 24 Bit."},
+ {"cat": "praxis", "q": "Hat der Arduino Uno einen echten DAC?", "a": "Der klassische Uno R3 nein (analogWrite() = PWM, erst mit RC-Tiefpass eine wellige Gleichspannung); der Uno R4 hat einen 12-Bit-DAC an A0."},
+ {"cat": "praxis", "q": "Die 3 Take-aways des Vortrags?", "a": "1) DAC = Code → Spannung, Treppe 2) R-2R: zwei Werte, Beitrag halbiert sich je Stufe 3) Treppe + Tiefpass = glattes Signal; Sinus/Cosinus aus einer Tabelle, Abtasttheorem gilt auch rückwärts."}
+];
+
+/* Rechen- und Fehleraufgaben – alle Werte mit Python nachgerechnet */
+const tasks=[
+ {"id": "P1", "cat": "grund", "q": "Folie 3: 4-Bit-DAC, U_ref = 8 V. Welche Spannung bei 1101?", "unit": "V", "ans": 6.5, "tol": 0.01, "sol": "13 · 0,5 V = 4 + 2 + 0,5 = 6,5 V"},
+ {"id": "U1", "cat": "grund", "q": "4-Bit-DAC, U_ref = 8 V: Welche Spannung bei 1010?", "unit": "V", "ans": 5.0, "tol": 0.01, "sol": "1010₂ = 10 → 10 · 0,5 V = 5,0 V (4 V + 1 V)"},
+ {"id": "U2", "cat": "grund", "q": "Gleicher DAC (4 Bit, 8 V): Welcher Code (als Dezimalzahl) ergibt 3 V?", "unit": "", "ans": 6, "tol": 0, "sol": "3 V / 0,5 V = 6 → 0110₂"},
+ {"id": "U3", "cat": "grund", "q": "8-Bit-DAC, U_ref = 2,56 V: Wie groß ist das LSB?", "unit": "mV", "ans": 10, "tol": 0.05, "sol": "2,56 V / 256 = 10 mV"},
+ {"id": "U3b", "cat": "grund", "q": "8-Bit-DAC, U_ref = 2,56 V: Spannung bei Code 200?", "unit": "V", "ans": 2.0, "tol": 0.005, "sol": "200 · 10 mV = 2,00 V"},
+ {"id": "U4", "cat": "grund", "q": "10-Bit-DAC, U_ref = 5 V: größte Ausgangsspannung?", "unit": "V", "ans": 4.995, "tol": 0.0015, "sol": "1023 / 1024 · 5 V ≈ 4,995 V (es fehlt 1 LSB ≈ 4,9 mV)"},
+ {"id": "P2", "cat": "sinus", "q": "Folie 5: Tabelle mit 16 Werten, Takt 16 kHz. Signalfrequenz?", "unit": "kHz", "ans": 1, "tol": 0, "sol": "16 kHz / 16 = 1 kHz"},
+ {"id": "U5", "cat": "sinus", "q": "Sinus-Tabelle mit 32 Werten, DAC-Takt 48 kHz. Signalfrequenz?", "unit": "kHz", "ans": 1.5, "tol": 0.01, "sol": "48 kHz / 32 = 1,5 kHz"},
+ {"id": "U6", "cat": "sinus", "q": "Die 16-Werte-Tabelle soll einen 2-kHz-Sinus liefern. Welcher Takt?", "unit": "kHz", "ans": 32, "tol": 0, "sol": "2 kHz · 16 = 32 kHz (oder bei 16 kHz jeden zweiten Wert ausgeben)"},
+ {"id": "U7", "cat": "sinus", "q": "Tabelle mit 32 Werten: Um wie viele Einträge versetzt liest man den Cosinus?", "unit": "", "ans": 8, "tol": 0, "sol": "¼ Periode = 90° → 32 / 4 = 8"},
+ {"id": "U8", "cat": "sinus", "q": "DAC-Takt 48 kHz: Unter welcher Frequenz muss das Signal bleiben?", "unit": "kHz", "ans": 24, "tol": 0, "sol": "Halber Takt: 48 / 2 = 24 kHz"},
+ {"id": "U9", "cat": "r2r", "q": "R-2R-DAC (4 Bit, 8 V) liefert bei 1010 leer 5 V. Spannung an einer Last von genau R ohne Puffer?", "unit": "V", "ans": 2.5, "tol": 0.01, "sol": "Innenwiderstand R + Last R → Teiler 1 : 1 → 2,5 V. Deshalb der OpAmp-Puffer."},
+ {"id": "U10", "cat": "r2r", "q": "Wie viele Widerstände hat ein 8-Bit-R-2R-Netzwerk?", "unit": "", "ans": 16, "tol": 0, "sol": "2n = 16 – aber nur zwei verschiedene Werte (R und 2R)"},
+ {"id": "U11", "cat": "praxis", "q": "CD-Audio (16 Bit, 44,1 kHz, Stereo): Datenrate?", "unit": "Mbit/s", "ans": 1.41, "tol": 0.01, "sol": "44 100 · 16 · 2 ≈ 1,41 Mbit/s (≈ 10,6 MB pro Minute)"},
+ {"id": "F1", "cat": "r2r", "type": "mc", "q": "„Ein 8-Bit-R-2R-DAC braucht Widerstände von R bis 128R.“", "opts": ["Richtig.", "Falsch: Das gilt für gewichtete Widerstände; R-2R braucht nur R und 2R.", "Falsch: Er braucht R bis 256R."], "ok": 1, "sol": "Gerade das ist der Vorteil des R-2R: zwei Werte, auf dem Chip gut genau herstellbar."},
+ {"id": "F2", "cat": "sinus", "type": "mc", "q": "„Der DAC liefert direkt einen glatten Sinus, das Filter ist nur Zierde.“", "opts": ["Richtig.", "Falsch: Am DAC ist es eine Treppe; erst der Tiefpass glättet sie.", "Falsch: Das Filter erzeugt den Sinus erst aus Rechtecken."], "ok": 1, "sol": "Der DAC hält jeden Wert bis zum nächsten → Treppe. Der Rekonstruktionsfilter entfernt die Kanten."},
+ {"id": "F3", "cat": "sinus", "type": "mc", "q": "„Mit 16 kHz Takt kann ich auch einen 10-kHz-Sinus ausgeben.“", "opts": ["Richtig, 16 > 10.", "Falsch: Das Signal muss unter dem halben Takt bleiben, also unter 8 kHz.", "Falsch: Man braucht mindestens den 10-fachen Takt."], "ok": 1, "sol": "Das Abtasttheorem gilt auch rückwärts: f_Signal < Takt/2."},
+ {"id": "F4", "cat": "grund", "type": "mc", "q": "„4-Bit-DAC an 8 V: Code 1111 gibt 8 V aus.“", "opts": ["Richtig.", "Falsch: 15/16 · 8 V = 7,5 V – U_ref wird nie ganz erreicht.", "Falsch: 1111 gibt 0 V aus."], "ok": 1, "sol": "Größter Code 2ⁿ − 1 → es fehlt immer genau 1 LSB."}
+];
+
+/* Rückfragen: ⭐ = sehr wahrscheinlich (aus 02_QA_Vorbereitung), N = neu, [LB] = Lehrbuchwissen */
+const qas=[
+ {"star": 1, "cat": "grund", "q": "Q1 · Was ist der Unterschied zwischen ADC und DAC?", "a": "Der ADC macht aus einer analogen Spannung eine Zahl, der DAC aus einer Zahl wieder eine Spannung. Beide arbeiten mit Stufen (LSB) und einem Takt – der DAC ist quasi der ADC rückwärts."},
+ {"star": 1, "cat": "grund", "q": "Q2 · Warum erreicht der DAC nie ganz U_ref?", "a": "Der größte Code ist 2ⁿ − 1, also kommt maximal (2ⁿ − 1)/2ⁿ · U_ref heraus – beim 4-Bit-Beispiel 15/16 · 8 V = 7,5 V. Es fehlt immer genau 1 LSB."},
+ {"star": 0, "cat": "grund", "q": "Q3 · Wie groß ist das LSB bei 8 Bit und 3,3 V?", "a": "U_ref / 2⁸ = 3,3 V / 256 ≈ 12,9 mV."},
+ {"star": 0, "cat": "grund", "q": "Q4 · Kann ein DAC auch negative Spannungen ausgeben?", "a": "Direkt nicht – unser Sinus liegt um die Mitte (Code 128 ≈ ½ U_ref). Den Gleichanteil trennt man mit einem Kondensator ab oder verschiebt ihn mit einem OpAmp; dann schwingt das Signal um 0 V."},
+ {"star": 1, "cat": "r2r", "q": "Q5 · Warum R-2R und nicht einfach gewichtete Widerstände?", "a": "Gewichtete Widerstände brauchen für 8 Bit Werte von R bis 128 R, die alle extrem genau sein müssen. R-2R kommt mit zwei Werten aus – die lassen sich auf einem Chip viel genauer herstellen und abgleichen. (Backup-Folie B2)"},
+ {"star": 1, "cat": "r2r", "q": "Q6 · Warum halbiert sich der Beitrag mit jeder Stufe?", "a": "Alles rechts von einem Knoten wirkt wie eine Spannungsquelle mit Innenwiderstand R; mit dem Längs-R sind das 2R. Zusammen mit dem 2R-Zweig am nächsten Knoten entsteht ein Spannungsteiler 1 : 1 → der Beitrag jedes Bits halbiert sich pro Stufe Richtung Ausgang. Ganz rechts beginnt es mit 2R ∥ 2R = R. (Beim Strommodus-R-2R halbiert sich tatsächlich der Strom an jedem Knoten.) (Backup-Folie B1)"},
+ {"star": 0, "cat": "r2r", "q": "Q7 · Wie viele Widerstände braucht ein 8-Bit-R-2R?", "a": "2n = 16 Stück, aber nur zwei verschiedene Werte."},
+ {"star": 1, "cat": "r2r", "q": "Q8 · Wozu der Operationsverstärker am Ausgang?", "a": "Das Netzwerk hat einen Innenwiderstand von R. Hängt man eine Last dran, bricht die Spannung ein – bei einer Last von genau R würden aus 6,5 V nur 3,25 V. Der OpAmp als Puffer liefert die Spannung, ohne das Netzwerk zu belasten."},
+ {"star": 0, "cat": "r2r", "q": "Q9 · Warum müssen die Widerstände so genau sein?", "a": "Das MSB trägt die halbe Spannung. Ist sein 2R-Zweig nur 2 % zu groß, sinkt bei 8 Bit die Spannung beim Schritt von Code 127 auf 128 sogar (−15 mV statt +10 mV) – der DAC ist dann nicht mehr monoton. (Backup-Folie B2)"},
+ {"star": 0, "cat": "r2r", "q": "Q10 · Was heißt „monoton“?", "a": "Steigt der Code, darf die Ausgangsspannung nie sinken. Für Regelungen ist das wichtig, sonst „schwingt“ der Regler."},
+ {"star": 1, "cat": "sinus", "q": "Q11 · Wozu braucht man den Tiefpass? Was passiert ohne?", "a": "Ohne Filter bleibt die Treppe mit ihren Kanten – das sind hochfrequente Anteile oberhalb des halben Takts, beim Audio zum Beispiel als Störgeräusch. Der Tiefpass (Rekonstruktionsfilter) lässt nur den gewünschten Sinus durch."},
+ {"star": 1, "cat": "sinus", "q": "Q12 · Wie würdest du einen 2-kHz-Sinus erzeugen?", "a": "Entweder den Takt auf 32 kHz verdoppeln oder bei 16 kHz nur jeden zweiten Tabellenwert ausgeben (8 Werte pro Periode). So arbeiten Funktionsgeneratoren mit Direct Digital Synthesis (DDS)."},
+ {"star": 0, "cat": "sinus", "q": "Q13 · Was passiert, wenn ich ein Signal über dem halben Takt ausgeben will?", "a": "Das geht nicht korrekt – das Abtasttheorem gilt auch rückwärts. Bei 16 kHz Takt muss das Signal unter 8 kHz bleiben; darüber entstehen falsche Frequenzen."},
+ {"star": 0, "cat": "sinus", "q": "Q14 · Reichen 16 Werte pro Periode?", "a": "Für die Demonstration ja – der Tiefpass glättet. Mehr Werte machen die Treppe feiner und das Filtern leichter; in der Praxis nimmt man oft 256 oder mehr Werte pro Periode."},
+ {"star": 1, "cat": "sinus", "q": "Q15 · Wo braucht man Sinus und Cosinus gleichzeitig?", "a": "Zum Beispiel beim Schrittmotor im Mikroschrittbetrieb: Spule A bekommt einen sinus-, Spule B einen cosinusförmigen Strom, dann dreht er gleichmäßig. Auch in der Funktechnik (I/Q-Signale) und bei Messgebern (Resolver) braucht man das Paar."},
+ {"star": 0, "cat": "sinus", "q": "Q16 · Warum ist der Cosinus „geschenkt“?", "a": "cos(x) = sin(x + 90°). 90° sind eine Viertelperiode – bei 16 Tabellenwerten liest man also ab Index + 4 (4 Einträge voraus)."},
+ {"star": 0, "cat": "sinus", "q": "Q17 · Woher kommt der Takt?", "a": "Von einem Timer im Mikrocontroller (oft mit DMA, damit die CPU frei bleibt). Bei Audio liefert ihn die digitale Audioschnittstelle, zum Beispiel I²S."},
+ {"star": 0, "cat": "praxis", "q": "Q18 · Hat der Arduino Uno einen DAC?", "a": "Der klassische Uno R3 nicht: analogWrite() erzeugt PWM, erst mit RC-Tiefpass entsteht eine (wellige) Gleichspannung – ein „Ersatz-DAC“. Der neuere Uno R4 hat dagegen einen echten 12-Bit-DAC an Pin A0."},
+ {"star": 0, "cat": "praxis", "q": "Q19 · Wie viele Bit hat ein Audio-DAC?", "a": "CD-Qualität: 16 Bit (65 536 Stufen, ≈ 96 dB Dynamik). HiFi- und Studio-DACs meist 24 Bit, gebaut als Sigma-Delta-Wandler."},
+ {"star": 0, "cat": "praxis", "q": "Q20 · Was ist ein Sigma-Delta-DAC?", "a": "Er arbeitet mit sehr hohem Takt und nur wenigen Stufen (oft 1 Bit). Durch die schnelle Folge und einen Filter entsteht im Mittel eine sehr feine Auflösung – deshalb ist er Standard bei Audio."},
+ {"star": 0, "cat": "praxis", "q": "Q21 · Was ist die Einschwingzeit?", "a": "Die Zeit, bis der Ausgang nach einem Codewechsel bis auf ±½ LSB beim neuen Wert angekommen ist. Sie begrenzt, wie schnell ein DAC Werte ausgeben kann."},
+ {"star": 0, "cat": "praxis", "q": "Q22 · Welche Datenmenge braucht CD-Audio?", "a": "44 100 Werte/s · 16 Bit · 2 Kanäle ≈ 1,41 Mbit/s, also rund 10,6 MB pro Minute (unkomprimiert)."},
+ {"star": 0, "cat": "praxis", "q": "Q23 · Erreicht der ESP32-DAC auch nie U_ref?", "a": "Espressif rechnet mit Code/255 · VDD – dort entspricht Code 255 der vollen Versorgungsspannung, eine andere Normierung. Das Prinzip „Stufen von 1 LSB“ bleibt gleich. Nur ESP32 und ESP32-S2 haben DACs, S3/C3/C6 nicht."}
+];
+
+/* ---------- Hilfen ---------- */
+const $=s=>document.querySelector(s);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+let score={ok:0,total:0};
+function updLcd(){$("#lcdVal").textContent=score.ok+" / "+score.total}
+function makeFilters(el,counts,onPick){
+  el.innerHTML="";
+  const all=Object.values(counts).reduce((s,n)=>s+n,0);
+  const items=[["all","Alle",null,all],...Object.keys(CATS).filter(k=>counts[k]).map(k=>[k,CATS[k].label,CATS[k].color,counts[k]])];
+  items.forEach(([k,l,c,n],i)=>{
+    const b=document.createElement("button");b.className="chip";b.type="button";b.setAttribute("aria-pressed",i===0?"true":"false");
+    if(c)b.style.setProperty("--dc",c);
+    b.innerHTML=(c?'<span class="dot"></span>':"")+l+' <span class="count">'+n+"</span>";
+    b.onclick=()=>{el.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");onPick(k)};
+    el.appendChild(b)});
+}
+const countBy=arr=>arr.reduce((m,x)=>(m[x.cat]=(m[x.cat]||0)+1,m),{});
+
+/* ---------- Modus ---------- */
+let mode="cards";
+document.querySelectorAll(".modes button").forEach(b=>b.onclick=()=>{
+  mode=b.dataset.mode;
+  document.querySelectorAll(".modes button").forEach(x=>x.setAttribute("aria-selected",x===b?"true":"false"));
+  ["cards","calc","qa"].forEach(m=>$("#mode-"+m).hidden=m!==mode);
+  if(mode!=="qa")stopTimer();
+});
+
+/* ---------- Karteikarten ---------- */
+let cFilter="all",deck=[],ci=0,again=new Set(),known=new Set();
+const LS="dac-trainer-nochmal";let saved=new Set();
+try{saved=new Set(JSON.parse(localStorage.getItem(LS)||"[]"))}catch(e){}
+function saveAgain(){try{localStorage.setItem(LS,JSON.stringify([...saved]))}catch(e){}updSaved()}
+function updSaved(){const b=$("#cardSaved");b.textContent="Gemerkte „Nochmal“ ("+saved.size+")";b.hidden=saved.size===0}
+function buildDeck(list){deck=list?list.slice():cards.filter(c=>cFilter==="all"||c.cat===cFilter);ci=0;again=new Set();known=new Set();$("#cardDone").hidden=true;$("#cardWrap").hidden=false;$("#cardControls").hidden=false;showCard()}
+function showCard(){
+  const w=$("#cardWrap"),inner=w.querySelector(".card-inner");inner.style.transition="none";w.classList.remove("flipped");void inner.offsetWidth;inner.style.transition="";
+  if(!deck.length)return;
+  const c=deck[ci],cat=CATS[c.cat];
+  [$("#cFrontTag"),$("#cBackTag")].forEach(t=>{t.textContent=cat.label;t.style.setProperty("--dc",cat.color)});
+  $("#cQ").textContent=c.q;$("#cA").innerHTML=c.a;
+  const done=known.size+again.size;
+  $("#cardCount").textContent=Math.min(ci+1,deck.length)+" / "+deck.length;
+  $("#cardBar").style.width=(done/deck.length*100)+"%";
+}
+function rate(k){const c=deck[ci];(k?known:again).add(c);(k?again:known).delete(c);const id=cards.indexOf(c);k?saved.delete(id):saved.add(id);saveAgain();step(1)}
+function step(d){
+  if(d>0&&ci===deck.length-1){finishCards();return}
+  ci=Math.max(0,Math.min(deck.length-1,ci+d));showCard()}
+function finishCards(){
+  $("#cardBar").style.width="100%";$("#cardWrap").hidden=true;$("#cardControls").hidden=true;$("#cardDone").hidden=false;
+  $("#cardDoneText").textContent=`Gewusst: ${known.size} · Nochmal: ${again.size} · ohne Bewertung: ${deck.length-known.size-again.size}`;
+  $("#cardRetryWrong").hidden=again.size===0;
+}
+$("#cardWrap").onclick=()=>$("#cardWrap").classList.toggle("flipped");
+$("#cardNext").onclick=()=>step(1);$("#cardPrev").onclick=()=>step(-1);
+$("#cardKnew").onclick=()=>rate(true);$("#cardAgain").onclick=()=>rate(false);
+$("#cardShuffle").onclick=()=>{shuffle(deck);ci=0;showCard()};
+$("#cardRestart").onclick=$("#cardRestart2").onclick=()=>buildDeck();
+$("#cardRetryWrong").onclick=()=>buildDeck(shuffle([...again]));
+$("#cardSaved").onclick=()=>buildDeck(shuffle([...saved].map(i=>cards[i]).filter(Boolean)));updSaved();
+makeFilters($("#cardFilters"),countBy(cards),k=>{cFilter=k;buildDeck()});
+document.addEventListener("keydown",e=>{
+  if(mode!=="cards"||e.target.tagName==="INPUT"||$("#cardWrap").hidden)return;
+  if(e.code==="Space"){e.preventDefault();$("#cardWrap").classList.toggle("flipped")}
+  else if(e.key==="ArrowRight")step(1);else if(e.key==="ArrowLeft")step(-1);
+  else if(e.key==="g"||e.key==="G")rate(true);else if(e.key==="n"||e.key==="N")rate(false);
+});
+
+/* ---------- Rechnen & Fehler ---------- */
+let tFilter="all",tList=[],ti=0,tState={};
+function buildTasks(){tList=tasks.filter(t=>tFilter==="all"||t.cat===tFilter);tList.forEach(t=>{if(t.type==="mc")t.perm=shuffle(t.opts.map((_,i)=>i))});ti=0;showTask()}
+function parseNum(s){s=(s||"").trim().replace(/\s/g,"").replace(",",".");return s===""?NaN:Number(s)}
+function fmt(x){return String(x).replace(".",",")}
+function showTask(){
+  const t=tList[ti],body=$("#calcBody"),st=tState[t.id];
+  $("#calcCount").textContent=(ti+1)+" / "+tList.length;
+  $("#calcBar").style.width=(tList.filter(x=>tState[x.id]).length/tList.length*100)+"%";
+  const cat=CATS[t.cat];
+  let h=`<div class="task-head"><span class="task-id">${t.id}</span><span class="tag" style="--dc:${cat.color}">${cat.label}</span></div><div class="task-q">${t.q}</div>`;
+  if(t.type==="mc"){
+    h+=`<div class="opts">`+(t.perm||t.opts.map((_,i)=>i)).map(i=>`<button class="opt" type="button" data-i="${i}">${t.opts[i]}</button>`).join("")+`</div>`;
+  }else{
+    h+=`<div class="answer-row"><input id="ans-${t.id}" inputmode="decimal" autocomplete="off" aria-label="Antwort"${st?` value="${st.val}" disabled`:""}><span class="unit">${t.unit}</span><button class="btn primary" type="button" id="check">Prüfen</button><button class="btn" type="button" id="reveal">Lösung zeigen</button></div>`;
+  }
+  h+=`<div id="fb"></div>`;body.innerHTML=h;
+  if(t.type==="mc"){
+    body.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{if(tState[t.id])return;answerMc(t,+b.dataset.i)});
+    if(st)renderMc(t,st.pick);
+  }else{
+    const inp=$("#ans-"+t.id);
+    $("#check").onclick=()=>checkNum(t);$("#reveal").onclick=()=>{if(!tState[t.id]){tState[t.id]={val:"",right:false,revealed:true};score.total++;updLcd()}renderNum(t)};
+    inp.onkeydown=e=>{if(e.key==="Enter")checkNum(t)};
+    if(st)renderNum(t);else inp.focus({preventScroll:true});
+  }
+}
+function checkNum(t){
+  if(tState[t.id])return;
+  const v=parseNum($("#ans-"+t.id).value);
+  if(isNaN(v)){$("#fb").innerHTML=`<div class="fb info">Bitte eine Zahl eingeben, z. B. ${fmt(t.ans>100?Math.round(t.ans/10)*10:1.5)}.</div>`;return}
+  const right=Math.abs(v-t.ans)<=t.tol+1e-9;
+  tState[t.id]={val:$("#ans-"+t.id).value,right};score.total++;if(right)score.ok++;updLcd();renderNum(t);
+}
+function renderNum(t){
+  const st=tState[t.id];
+  $("#calcBar").style.width=(tList.filter(x=>tState[x.id]).length/tList.length*100)+"%";
+  const inp=$("#ans-"+t.id);if(inp)inp.disabled=true;
+  const cls=st.revealed?"info":(st.right?"right":"wrong");
+  const lbl=st.revealed?"Lösung":(st.right?"Richtig":"Noch nicht – richtig ist "+fmt(t.ans)+" "+t.unit);
+  $("#fb").innerHTML=`<div class="fb ${cls}"><b class="lbl">${lbl}</b>${t.sol}</div>`;
+}
+function answerMc(t,i){const right=i===t.ok;tState[t.id]={pick:i,right};score.total++;if(right)score.ok++;updLcd();renderMc(t,i)}
+function renderMc(t,i){
+  document.querySelectorAll(".opt").forEach(b=>{const k=+b.dataset.i;if(k===t.ok)b.classList.add("right");else if(k===i)b.classList.add("wrong");b.disabled=true});
+  const right=i===t.ok;
+  $("#fb").innerHTML=`<div class="fb ${right?"right":"wrong"}"><b class="lbl">${right?"Richtig":"Nicht ganz"}</b>${t.sol}</div>`;
+  $("#calcBar").style.width=(tList.filter(x=>tState[x.id]).length/tList.length*100)+"%";
+}
+$("#calcNext").onclick=()=>{ti=(ti+1)%tList.length;showTask()};
+$("#calcPrev").onclick=()=>{ti=(ti-1+tList.length)%tList.length;showTask()};
+$("#calcShuffle").onclick=()=>{shuffle(tList);ti=0;showTask()};
+$("#calcRestart").onclick=()=>{tState={};score={ok:0,total:0};updLcd();buildTasks()};
+makeFilters($("#calcFilters"),countBy(tasks),k=>{tFilter=k;buildTasks()});
+
+/* ---------- Rückfragen ---------- */
+let qList=[],qi=0,qRes={},timer=null,tLeft=30;
+function buildQa(list){
+  qList=list?list.slice():shuffle(qas.filter(q=>!$("#qaStarOnly").checked||q.star));
+  qi=0;qRes={};$("#qaDone").hidden=true;showQa();
+}
+function showQa(){
+  stopTimer();tLeft=30;renderTimer();
+  const left=qList.length-qi;$("#sLeft").textContent=left;
+  ["ok","warn","bad"].forEach(r=>$("#s"+(r==="ok"?"Ok":r==="warn"?"Warn":"Bad")).textContent=Object.values(qRes).filter(x=>x===r).length);
+  if(qi>=qList.length){finishQa();return}
+  const q=qList[qi];
+  $("#qaTag").textContent=(q.star?"⭐ ":"")+CATS[q.cat].label;$("#qaTag").style.setProperty("--dc",CATS[q.cat].color);
+  $("#qaQ").textContent=q.q;$("#qaA").hidden=true;$("#qaA").innerHTML=q.a;$("#qaRate").hidden=true;
+  $("#qaStart").hidden=false;$("#qaShow").hidden=false;
+}
+function renderTimer(){const t=$("#qaTimer");t.textContent="0:"+String(Math.max(0,tLeft)).padStart(2,"0");t.classList.toggle("low",tLeft<=5)}
+function stopTimer(){if(timer){clearInterval(timer);timer=null}}
+$("#qaStart").onclick=()=>{stopTimer();tLeft=30;renderTimer();timer=setInterval(()=>{tLeft--;renderTimer();if(tLeft<=0){stopTimer();reveal()}},1000)};
+function reveal(){stopTimer();$("#qaA").hidden=false;$("#qaRate").hidden=false;$("#qaShow").hidden=true;$("#qaStart").hidden=true}
+$("#qaShow").onclick=reveal;
+$("#qaRate").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  const r=b.dataset.r;qRes[qi]=r;qi++;showQa()});
+function finishQa(){
+  stopTimer();$("#qaDone").hidden=false;$("#qaRate").hidden=true;$("#qaStart").hidden=true;$("#qaShow").hidden=true;$("#qaA").hidden=true;
+  $("#qaQ").textContent="";$("#qaTag").textContent="";
+  const c=r=>Object.values(qRes).filter(x=>x===r).length;
+  $("#qaDoneText").textContent=`Sicher: ${c("ok")} · Wackelig: ${c("warn")} · Falsch: ${c("bad")}`;
+  $("#qaRetry").hidden=c("warn")+c("bad")===0;
+}
+$("#qaRetry").onclick=()=>buildQa(shuffle(qList.filter((q,i)=>qRes[i]&&qRes[i]!=="ok")));
+$("#qaRestart").onclick=()=>buildQa();
+$("#qaStarOnly").onchange=()=>buildQa();
+
+/* ---------- Start ---------- */
+buildDeck();buildTasks();buildQa();updLcd();
+</script>
+
+</body>
+</html>

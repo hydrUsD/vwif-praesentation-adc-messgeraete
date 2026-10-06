@@ -1,0 +1,272 @@
+% =====================================================================
+%  Vom Bit zurück zum Signal – Der Digital-Analog-Wandler (DAC)
+%  VWIF | Ausbildungsinhalte 022: Grundlagen der Elektrotechnik
+% ---------------------------------------------------------------------
+%  Kompilieren (TeXstudio + MiKTeX): pdfLaTeX, 2x laufen lassen.
+%  MiKTeX installiert fehlende Pakete (circuitikz, pgfplots) automatisch.
+%
+%  Kurzfassung (4:45 statt 5:30):  \kurzfassungtrue  -> Folie 6 wandert ins Backup
+%  Sprechernotizen anzeigen:       \setbeameroption{...} unten einkommentieren
+% =====================================================================
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\newif\ifkurzfassung
+\kurzfassungfalse      % false = 5:30 (alle Folien) | true = 4:45
+
+% \setbeameroption{show notes on second screen=right}
+% \setbeameroption{show only notes}
+\usepackage{pgfpages}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\DeclareUnicodeCharacter{2192}{\ensuremath{\rightarrow}}
+\DeclareUnicodeCharacter{2248}{\ensuremath{\approx}}
+\DeclareUnicodeCharacter{03A9}{\ensuremath{\Omega}}
+\DeclareUnicodeCharacter{2212}{\ensuremath{-}}
+\DeclareUnicodeCharacter{00B0}{\ensuremath{^\circ}}
+\usepackage{amsmath}
+\usepackage{siunitx}
+\sisetup{locale=DE, per-mode=symbol}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage[european,siunitx]{circuitikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+
+% ---------- Neutrales Design (an Firmenvorlage anpassen) -------------
+\usetheme{default}
+\definecolor{akzent}{RGB}{0,82,147}     % <- Firmenfarbe 1
+\definecolor{akzent2}{RGB}{230,120,0}   % <- Firmenfarbe 2
+\definecolor{grau}{RGB}{110,110,110}
+\setbeamercolor{frametitle}{fg=akzent}
+\setbeamercolor{title}{fg=akzent}
+\setbeamercolor{structure}{fg=akzent}
+\setbeamercolor{block title}{bg=akzent,fg=white}
+\setbeamercolor{block body}{bg=akzent!8}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \hfill\color{grau}\scriptsize\insertframenumber\,/\,\inserttotalframenumber\hspace*{4mm}\vspace*{2mm}}
+
+\newcommand{\kernaussage}[1]{%
+  \begin{beamercolorbox}[sep=6pt,rounded=true]{block body}%
+  \textbf{#1}\end{beamercolorbox}}
+
+% Signalkette; #1 = hervorgehobenes Glied (1..6), 0 = keins
+\newcommand{\kette}[1]{%
+  \begin{tikzpicture}[every node/.style={font=\scriptsize,minimum height=7mm,inner sep=2pt,
+      rounded corners=2pt,text width=16mm,align=center}]
+    \foreach \i/\t in {1/Mikrofon,2/ADC,3/Speicher\\(Festplatte),4/DAC,5/Verstärker,6/Laut\-sprecher}{
+      \ifnum\i=#1 \node[fill=akzent2,text=white,font=\scriptsize\bfseries] (k\i) at (\i*2.15,0) {\t};
+      \else \node[fill=akzent!15,text=akzent] (k\i) at (\i*2.15,0) {\t}; \fi}
+    \foreach \i [evaluate=\i as \j using int(\i+1)] in {1,...,5}
+      \draw[-{Stealth},akzent,thick] (k\i) -- (k\j);
+    \node[draw=none,fill=none,text=grau,font=\tiny,text width=30mm] at (1*2.15+1.07,-0.75) {analog \(\rightarrow\) digital};
+    \node[draw=none,fill=none,text=grau,font=\tiny,text width=30mm] at (4*2.15+1.07,-0.75) {digital \(\rightarrow\) analog};
+  \end{tikzpicture}}
+
+\title{Vom Bit zurück zum Signal}
+\subtitle{Der Digital-Analog-Wandler (DAC)}
+\author{Paul Heuwer}                       % <- ggf. anpassen
+\institute{VWIF \textbar{} Ausbildungsinhalte 022: Grundlagen der Elektrotechnik}
+\date{06.10.2026}
+
+% Sinus-Tabelle (16 Werte, 8 Bit, Mitte 128) – nachgerechnet in _prep/verify_dac.py
+\def\sinustabelle{(0,128)(1,177)(2,218)(3,245)(4,255)(5,245)(6,218)(7,177)(8,128)(9,79)(10,38)(11,11)(12,1)(13,11)(14,38)(15,79)(16,128)}
+
+\begin{document}
+
+% ---------------------------------------------------------------- 1
+\begin{frame}[plain]
+  \titlepage
+  \note{Hallo zusammen! Wir speichern heute fast alles digital – Musik, Videos, Messwerte. Aber hören, sehen und bewegen können wir nur analog. Wie die Zahlen wieder zu einem Signal werden, zeige ich euch in den nächsten fünf Minuten. (0:15)}
+\end{frame}
+
+% ---------------------------------------------------------------- 2
+\begin{frame}{Wozu ein DAC?}
+  \kernaussage{Gespeichert wird digital – Lautsprecher, Motoren und Ohren verstehen nur analog.}
+  \vspace{4mm}
+  \centering\kette{4}
+  \vspace{4mm}
+  \begin{itemize}
+    \item Musik liegt als \textbf{Zahlen} auf Festplatte, SSD oder im Stream\\
+          {\small CD-Qualität: \num{44100} Werte pro Sekunde und Kanal, je \SI{16}{Bit}}
+    \item Ein Lautsprecher braucht eine \textbf{stetig veränderliche Spannung}
+    \item Weitere Beispiele: Funktionsgenerator (Sinus), Sollwert für Motor oder Ventil
+  \end{itemize}
+  \note{Digital kann ich verlustfrei kopieren, speichern, verschicken. Ein Lautsprecher kann mit Zahlen nichts anfangen – die Membran braucht eine stetig veränderliche Spannung. Der DAC ist das Gegenstück zum ADC: ADC macht Zahlen aus dem Signal, DAC macht aus den Zahlen wieder ein Signal. In jedem Handy, Laptop, Bluetooth-Kopfhörer steckt mindestens einer. (Ende 1:00)}
+\end{frame}
+
+% ---------------------------------------------------------------- 3
+\begin{frame}{Vom Code zur Spannung}
+  \kernaussage{\(U_\text{aus} = \dfrac{\text{Code}}{2^n}\cdot U_\text{ref}\) \;– heraus kommt eine Treppe in Schritten von 1~LSB.}
+  \vspace{2mm}
+  \begin{columns}[T]
+    \begin{column}{0.47\textwidth}
+      \small
+      Beispiel: \textbf{4 Bit}, \(U_\text{ref}=\SI{8}{V}\)
+      \begin{itemize}
+        \item \(2^4 = 16\) Stufen, \(\text{1 LSB} = \SI{8}{V}/16 = \SI{0.5}{V}\)
+        \item Bitgewichte: \SI{4}{V} · \SI{2}{V} · \SI{1}{V} · \SI{0.5}{V}
+      \end{itemize}
+      \vspace{1mm}
+      \begin{tabular}{@{}lcccc@{}}
+        \toprule
+        Bit & \(b_3\) & \(b_2\) & \(b_1\) & \(b_0\)\\ \midrule
+        \(1101_2\) & 1 & 1 & 0 & 1\\
+        Beitrag & \SI{4}{V} & \SI{2}{V} & \SI{0}{V} & \SI{0.5}{V}\\ \bottomrule
+      \end{tabular}\\[2mm]
+      \(\Rightarrow\) \textbf{\boldmath\(1101_2 = 13 \rightarrow \SI{6.5}{V}\)}\\[1mm]
+      {\footnotesize Maximum \(1111_2\): \SI{7.5}{V} – \(U_\text{ref}\) wird nie ganz erreicht.}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{tikzpicture}
+        \begin{axis}[width=\linewidth,height=5.3cm,xmin=-0.5,xmax=16,ymin=0,ymax=8.3,
+            xlabel={Code},ylabel={\(U_\text{aus}\) in V},xtick={0,4,8,12,15},
+            ytick={0,2,4,6,8},grid=major,grid style={gray!20},
+            label style={font=\footnotesize},tick label style={font=\footnotesize}]
+          \addplot[const plot,akzent,thick] coordinates
+            {(0,0)(1,0.5)(2,1)(3,1.5)(4,2)(5,2.5)(6,3)(7,3.5)(8,4)(9,4.5)(10,5)(11,5.5)(12,6)(13,6.5)(14,7)(15,7.5)(16,7.5)};
+          \addplot[only marks,mark=*,akzent2,mark size=2.5pt] coordinates {(13,6.5)};
+          \node[akzent2,font=\footnotesize,anchor=east] at (axis cs:12.8,7.3) {1101 \(\rightarrow\) \SI{6.5}{V}};
+          \draw[dashed,grau] (axis cs:0,8) -- (axis cs:16,8) node[pos=0.2,above,font=\tiny] {\(U_\text{ref}\)};
+        \end{axis}
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+  \note{Der DAC rechnet rückwärts: Binärzahl rein, Spannung raus. 4 Bit, 8 V Referenz: 16 Stufen, eine Stufe 0,5 V = LSB. MSB zählt 4 V (halbe Referenz), dann 2 V, 1 V, 0,5 V. Publikum fragen: Was kommt bei 1101 raus? – 4 + 2 + 0,5 = 6,5 V. Dazwischen gibt es nichts – der DAC springt von Stufe zu Stufe: eine Treppe. (Ende 1:55)}
+\end{frame}
+
+% ---------------------------------------------------------------- 4
+\begin{frame}{Das R-2R-Netzwerk}
+  \kernaussage{Nur zwei Widerstandswerte (R und 2R): Jede Stufe halbiert – so bekommt jedes Bit sein Gewicht.}
+  \vspace{1mm}
+  \centering
+  \begin{circuitikz}[scale=0.78,transform shape,european resistors]
+    % Knoten (MSB links am Ausgang)
+    \coordinate (n3) at (0,0); \coordinate (n2) at (3,0);
+    \coordinate (n1) at (6,0); \coordinate (n0) at (9,0);
+    \draw (n3) to[R,l=$R$] (n2) to[R,l=$R$] (n1) to[R,l=$R$] (n0)
+          to[R,l=$2R$] (11.2,0) node[ground,rotate=90]{};
+    \foreach \x/\b/\s/\w in {0/3/U_\text{ref}/\tfrac12,3/2/U_\text{ref}/\tfrac14,6/1/\text{Masse}/\tfrac18,9/0/U_\text{ref}/\tfrac1{16}}{
+      \draw (\x,0) node[circ]{} to[R,l_=$2R$] (\x,-2.4);
+      \node[draw,rounded corners=2pt,fill=akzent!10,font=\small,align=center,minimum width=20mm]
+        at (\x,-3.1) {$b_\b$: $\s$};
+      \node[akzent2,font=\small] at (\x+0.95,-1.2) {$\w\,U_\text{ref}$};
+    }
+    \draw[-{Stealth},thick,akzent] (n3) -- (-1.6,0) node[left,align=center,font=\small,text=akzent]
+      {OpAmp-\\Puffer\\[1mm]\(U_\text{aus}=\SI{6.5}{V}\)};
+    \node[grau,font=\footnotesize] at (4.5,-4.1) {Schalterstellung für Code \(1101_2\) bei \(U_\text{ref} = \SI{8}{V}\)};
+  \end{circuitikz}
+  \vspace{-1mm}
+  \begin{itemize}\small
+    \item Bit = 1 \(\rightarrow\) Zweig an \(U_\text{ref}\), Bit = 0 \(\rightarrow\) an Masse; mit jeder Stufe Richtung Ausgang \textbf{halbiert sich der Beitrag}
+    \item Nur \textbf{zwei Werte} \(\rightarrow\) auf dem Chip sehr genau; mehr Bit = weitere Stufen anhängen
+  \end{itemize}
+  \note{Einfachste Idee wären verschieden große Widerstände pro Bit – bei 8 Bit von R bis 128 R, alle superexakt. Der Trick: R-2R-Leiter aus nur zwei Werten. Jedes Bit schaltet seinen Zweig an Referenz oder Masse. Weil sich der Beitrag mit jeder Stufe Richtung Ausgang halbiert, zählt das MSB die Hälfte, das nächste ein Viertel usw. Mehr Bit: Stufen anhängen. Zwei Werte lassen sich auf dem Chip sehr genau herstellen. Am Ausgang ein OpAmp als Puffer, damit die Last die Spannung nicht verfälscht. (Ende 3:05)}
+\end{frame}
+
+% ---------------------------------------------------------------- 5
+\begin{frame}{Sinus \& Cosinus aus Zahlen}
+  \kernaussage{Ein Sinus wird als Zahlentabelle gespeichert – der DAC gibt sie im Takt aus, ein Tiefpass glättet die Treppe.}
+  \vspace{-2mm}
+  \begin{columns}[T]
+    \begin{column}{0.44\textwidth}
+      \small
+      \begin{itemize}
+        \item Tabelle: \textbf{16 Werte} pro Periode (8 Bit)\\{\footnotesize 128 · 177 · 218 · 245 · 255 · … · 1 · …}
+        \item Takt \SI{16}{kHz} \(\Rightarrow\) \(16000/16 = \) \textbf{\SI{1}{kHz}}
+        \item Treppe \(\rightarrow\) \textbf{Tiefpass} \(\rightarrow\) glatter Sinus
+        \item \textbf{Cosinus} = dieselbe Tabelle, ab \textbf{Index + 4} gelesen (¼ Periode = 90°)
+        \item Abtasttheorem: Signal \(<\) halber Takt (hier unter \SI{8}{kHz})
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.54\textwidth}
+      \begin{tikzpicture}
+        \begin{axis}[width=\linewidth,height=4.7cm,xmin=0,xmax=16,ymin=-5,ymax=262,
+            xlabel={Tabellenindex (1 Periode = 16 Werte)},ylabel={Code},
+            xtick={0,4,8,12,16},ytick={0,128,255},grid=major,grid style={gray!20},
+            label style={font=\footnotesize},tick label style={font=\footnotesize},
+            legend style={font=\tiny,at={(0.5,1.03)},anchor=south,draw=none,legend columns=2,/tikz/every even column/.append style={column sep=2mm}}]
+          \addplot[const plot,akzent,thick] coordinates {\sinustabelle};
+          \addlegendentry{DAC-Ausgang (Treppe)}
+          \addplot[akzent2,thick,dashed,domain=0:16,samples=120] {128+127*sin(deg(2*pi*x/16))};
+          \addlegendentry{nach Tiefpass: Sinus}
+          \addplot[grau,thick,dotted,domain=0:16,samples=120] {128+127*cos(deg(2*pi*x/16))};
+          \addlegendentry{Cosinus (Index + 4)}
+        \end{axis}
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+  \note{Eine Periode als Tabelle: 16 Zahlen hoch und wieder runter. DAC gibt sie im festen Takt aus, z. B. 16 000 Werte/s. 16 Werte pro Periode, 16 000 pro Sekunde – 1000 Perioden = 1-kHz-Sinus. Direkt am DAC eine Treppe – dahinter ein Tiefpass, der glättet. Cosinus geschenkt: eine Viertelperiode verschoben = ab Index + 4 lesen. Beispiel Schrittmotor: Spule A Sinus, Spule B Cosinus, dreht gleichmäßig. Abtasttheorem: 16 kHz Takt – Signale nur unter 8 kHz. (Ende 4:15)}
+\end{frame}
+
+% ---------------------------------------------------------------- 6 (optional)
+\newcommand{\praxisfolie}{%
+\begin{frame}{DAC in der Praxis \ifkurzfassung{\small\color{grau}(Backup)}\fi}
+  \kernaussage{Auflösung (Bit) und Ausgaberate entscheiden – je nach Anwendung 8 bis 24 Bit.}
+  \vspace{3mm}
+  \begin{itemize}
+    \item \textbf{Auflösung}: mehr Bit \(\rightarrow\) feinere Treppe (8 Bit = 256, 16 Bit = \num{65536} Stufen)
+    \item \textbf{Ausgaberate}: Werte pro Sekunde \(\rightarrow\) begrenzt die höchste Frequenz
+  \end{itemize}
+  \vspace{2mm}
+  \centering\small
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    Anwendung & Auflösung & Rate & Bauart\\ \midrule
+    ESP32-Mikrocontroller & 8 Bit (2 Kanäle) & einstellbar & mit Cosinus-Generator\\
+    Audio-CD-Wiedergabe & 16 Bit & \SI{44.1}{kHz} & meist Sigma-Delta\\
+    HiFi-/Studio-Audio & 24 Bit & bis \SI{192}{kHz} & Sigma-Delta\\ \bottomrule
+  \end{tabular}\\[3mm]
+  {\footnotesize Weitere Bauarten: gewichtete Widerstände (selten), PWM + Tiefpass („Ersatz-DAC“)}
+  \note{Bitzahl = Feinheit der Treppe, Ausgaberate = wie schnell sich das Signal ändern kann (Abtasttheorem). ESP32: zwei 8-Bit-DACs + eingebauter Cosinus-Generator. Audio: 24 Bit, meist Sigma-Delta. (Ende 5:00)}
+\end{frame}}
+\ifkurzfassung\else\praxisfolie\fi
+
+% ---------------------------------------------------------------- 7
+\begin{frame}{Fazit}
+  \kernaussage{Der DAC ist die Brücke von den Zahlen zurück in die analoge Welt.}
+  \vspace{4mm}
+  \begin{enumerate}
+    \item \textbf{DAC = Code \(\rightarrow\) Spannung:} \(U_\text{aus} = \text{Code}/2^n\cdot U_\text{ref}\), eine Treppe mit 1 LSB pro Stufe
+    \item \textbf{R-2R-Netzwerk:} nur zwei Widerstandswerte, jede Stufe halbiert \(\rightarrow\) binäre Gewichte
+    \item \textbf{Treppe + Tiefpass = glattes Signal:} Sinus und Cosinus aus derselben Tabelle; das Abtasttheorem gilt auch rückwärts
+  \end{enumerate}
+  \vfill\centering{\Large\color{akzent}\textbf{Fragen?}}\vfill
+  \note{Zusammengefasst: Erstens – Code wird Spannung, Stufe für Stufe. Zweitens – R-2R: zwei Werte reichen, weil sich der Beitrag mit jeder Stufe halbiert. Drittens – Tiefpass macht aus der Treppe ein glattes Signal; Sinus und Cosinus aus derselben Tabelle. Danke fürs Zuhören – habt ihr Fragen? (Ende 5:30)}
+\end{frame}
+
+% ================================================================ Backup
+\appendix
+\ifkurzfassung\praxisfolie\fi
+
+\begin{frame}{Backup B1: Warum halbiert sich der Beitrag je Stufe?}
+  \begin{itemize}
+    \item Ganz rechts (LSB): \(2R \parallel 2R = R\)
+    \item Alles rechts eines Knotens wirkt wie eine Quelle mit Innenwiderstand \(R\); mit dem Längs-\(R\) \(\rightarrow\) \(2R\); mit dem nächsten \(2R\)-Zweig \(\rightarrow\) Spannungsteiler \(1:1\)
+    \item Das wiederholt sich Stufe für Stufe \(\rightarrow\) \(\tfrac12, \tfrac14, \tfrac18, \dots\)
+    \item Strommodus-Variante (Ausgang am OpAmp auf \SI{0}{V}): dort halbiert sich tatsächlich der \emph{Strom} je Knoten
+    \item Innenwiderstand des Netzwerks am Ausgang: \(R\) \(\rightarrow\) an Last \(R\) würden aus \SI{6.5}{V} nur \SI{3.25}{V} \(\Rightarrow\) Puffer
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Backup B2: Gewichtete Widerstände vs.\ R-2R \& Toleranz}
+  \centering
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    & Gewichtete Widerstände & R-2R-Netzwerk\\ \midrule
+    Werte (8 Bit) & 8 verschiedene: \(R \dots 128R\) & 2: \(R\) und \(2R\)\\
+    Anzahl (8 Bit) & 8 (+ Rückkopplung) & 16 (\(2n\))\\
+    Fertigung & schwer genau, Verhältnis \(1:128\) & einfach, gut abgleichbar\\
+    Einsatz & Lehrbeispiel, wenige Bit & Standard für Widerstands-DACs\\ \bottomrule
+  \end{tabular}\\[5mm]
+  \begin{itemize}\small
+    \item Toleranz kritisch beim MSB: Simulation 8 Bit, MSB-\(2R\)-Zweig \SI{2}{\percent} zu groß \(\rightarrow\) Schritt 127 \(\rightarrow\) 128 ist \SI{-15}{mV} statt \SI{+10}{mV} \(\Rightarrow\) \textbf{nicht monoton}
+  \end{itemize}
+\end{frame}
+
+\end{document}
